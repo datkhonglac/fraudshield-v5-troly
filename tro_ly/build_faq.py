@@ -1,0 +1,271 @@
+"""Sinh tro_ly/hoi_dap.csv – bộ hỏi–đáp cho Trợ lý Fraud Shield (chạy nội bộ, không gọi AI bên ngoài).
+
+Nhóm có thể sửa thẳng tệp CSV bằng Excel; tệp này chỉ là bản gốc để tạo lại khi cần.
+Cột: id · nhom · cau_hoi · cach_hoi_khac (ngăn bằng |) · tra_loi · di_toi (mã trang trong menu, để trống nếu không có)
+"""
+import csv
+from pathlib import Path
+
+Q = [
+    # ---------------------------------------------------------------- A. Bắt đầu & điều hướng
+    ("A01", "Bắt đầu", "Web này dùng để làm gì?",
+     "fraud shield là gì|ứng dụng này làm gì|giới thiệu web|mục đích của app",
+     "Fraud Shield là bảng điều khiển phát hiện gian lận thanh toán số. Hệ thống chấm điểm rủi ro từng giao dịch, "
+     "xếp vào 4 mức (CRITICAL, HIGH, MEDIUM, LOW), gom các giao dịch đáng ngờ của cùng khách thành hồ sơ để chuyên viên "
+     "xử lý, và giám sát giao dịch mới theo thời gian thực từ ứng dụng khách FS Pay.", ""),
+    ("A02", "Bắt đầu", "Tôi nên bắt đầu từ đâu?",
+     "mới vào thì làm gì|hướng dẫn nhanh|bắt đầu sử dụng|lần đầu dùng",
+     "Mở **Hàng đợi hồ sơ** (nhóm Xử lý cảnh báo), bấm chip **Khẩn cấp chưa xử lý** để thấy hồ sơ cần làm trước, "
+     "chọn một hồ sơ rồi đọc thẻ **Tóm tắt & kết luận** và ghi quyết định. Muốn xem toàn cảnh thì vào **Tổng quan**.", "cases"),
+    ("A03", "Bắt đầu", "Menu bên trái được chia thế nào?",
+     "các nhóm trong menu|menu có những gì|cấu trúc menu|tìm chức năng ở đâu",
+     "Menu có 4 nhóm: **Xử lý cảnh báo** (hàng đợi, giám sát thời gian thực, nhật ký), **Tra cứu & phân tích** "
+     "(tổng quan, tra cứu giao dịch, khách hàng & liên kết), **Mô hình & kiểm định** (các chỉ số đánh giá mô hình) và "
+     "**Dữ liệu & quản trị** (tải dữ liệu, tải kết quả, học lại). Bấm tên nhóm để mở/đóng, bấm mục con để mở trang.", ""),
+    ("A04", "Bắt đầu", "Các thẻ ngang trong trang là gì?",
+     "thẻ là gì|tab trong trang|sao không thấy hết nội dung|chuyển phần trong trang",
+     "Trang dài được chia thành thẻ, giống mục lục. Chỉ thẻ đang chọn được hiện để màn hình gọn; bấm tên thẻ khác "
+     "để xem phần đó. Ví dụ chi tiết hồ sơ có 5 thẻ: Tóm tắt & kết luận · Giao dịch · Thói quen khách · Liên kết thiết bị · Nhật ký.", ""),
+    ("A05", "Bắt đầu", "Dữ liệu đang xem lấy từ đâu?",
+     "dữ liệu nguồn|data pack là gì|bao nhiêu giao dịch|dữ liệu btc",
+     "Mặc định là Data Pack của Ban tổ chức: 8.000 giao dịch từ 01/01 đến 30/06/2026 của 400 khách, 150 merchant, "
+     "613 thiết bị, trong đó 2.000 giao dịch có nhãn (128 gian lận). Dữ liệu đã ẩn danh – chỉ có mã khách, không có "
+     "tên hay số tài khoản thật.", "data"),
+    ("A06", "Bắt đầu", "Sao web tự tải lại hoặc báo đang ngủ?",
+     "app bị ngủ|web chậm lúc đầu|yes get this app back up|mở web lâu|app chạy chậm|web chậm quá|load lâu",
+     "Bản trình diễn chạy trên Streamlit Cloud miễn phí: không có ai mở trong khoảng 12 giờ thì app 'ngủ'. Bấm "
+     "**Yes, get this app back up!** và chờ khoảng 1 phút. Lần chạy đầu mô hình mất thêm 10–20 giây.", ""),
+
+    # ---------------------------------------------------------------- B. Hàng đợi hồ sơ
+    ("B01", "Hàng đợi hồ sơ", "Hồ sơ (case) là gì?",
+     "case là gì|vì sao gom giao dịch|một hồ sơ gồm những gì|hồ sơ khác giao dịch thế nào",
+     "Hồ sơ gom các giao dịch bị cảnh báo của **cùng một khách** xảy ra cách nhau không quá 30 phút – thường là một "
+     "đợt tấn công. Xử lý theo hồ sơ giúp chuyên viên kết luận một lần cho cả chuỗi thay vì từng giao dịch lẻ.", "cases"),
+    ("B02", "Hàng đợi hồ sơ", "CRITICAL, HIGH, MEDIUM, LOW khác nhau thế nào?",
+     "các mức rủi ro|critical là gì|high là gì|medium là gì|low là gì|mức độ cảnh báo",
+     "**CRITICAL**: điểm vượt ngưỡng chặn và có dấu hiệu thử sai/dồn dập (R5 hoặc R6) – tạm dừng, gọi xác minh ngay, SLA 5 phút. "
+     "**HIGH**: vượt ngưỡng chặn – tạm dừng, chuyên viên kiểm tra, SLA 2 giờ. **MEDIUM**: không chặn, khách phải "
+     "xác thực thêm (OTP/sinh trắc học). **LOW**: cho qua.", ""),
+    ("B03", "Hàng đợi hồ sơ", "SLA là gì?",
+     "sla 5 phút|sla 2 giờ|thời hạn xử lý|cột sla nghĩa là gì",
+     "SLA là thời hạn phải xử lý hồ sơ: **CRITICAL 5 phút**, **HIGH 2 giờ**. Ở trang Giám sát thời gian thực, mỗi "
+     "giao dịch chờ quyết định có đồng hồ đếm ngược, chuyển vàng rồi đỏ khi sắp hết hạn.", "cases"),
+    ("B04", "Hàng đợi hồ sơ", "Các chip lọc nhanh dùng để làm gì?",
+     "chip khẩn cấp|chip thiết bị dùng chung|nghi vấn mẫu mới|xác thực thêm merchant high|lọc nhanh",
+     "**Khẩn cấp chưa xử lý**: hồ sơ CRITICAL chưa có kết luận – làm trước. **Thiết bị dùng chung (R7)**: một máy "
+     "dùng cho nhiều khách – dấu hiệu tài khoản bị chiếm/đường dây. **Xác thực thêm · merchant HIGH**: giao dịch MEDIUM "
+     "ở merchant rủi ro cao. **Nghi vấn mẫu mới**: giao dịch điểm thấp nhưng rất bất thường – có thể là kiểu gian lận mới.", "cases"),
+    ("B05", "Hàng đợi hồ sơ", "Làm sao ghi quyết định cho một hồ sơ?",
+     "ghi kết luận|xác nhận gian lận|báo động giả|kết luận hồ sơ|đóng hồ sơ",
+     "Chọn hồ sơ trong danh sách → thẻ **Tóm tắt & kết luận** → chọn *Xác nhận gian lận*, *Báo động giả* hoặc "
+     "*Cần thêm thông tin* → điền tên người xử lý, ghi chú → bấm **Ghi quyết định**. Quyết định áp cho mọi giao dịch "
+     "trong hồ sơ và được ghi vào Nhật ký kèm phiên bản mô hình.", "cases"),
+    ("B06", "Hàng đợi hồ sơ", "Xử lý hàng loạt nhiều hồ sơ cùng lúc thế nào?",
+     "chọn nhiều hồ sơ|xử lý hàng loạt|bulk|kết luận nhiều hồ sơ",
+     "Ở ô **Loại rủi ro** chọn một loại (ví dụ Thiết bị dùng chung) → tích chọn các hồ sơ trong bảng → bấm **Xử lý "
+     "hàng loạt** → chọn kết luận và xác nhận trong hộp thoại. Chỉ gộp được các hồ sơ cùng loại rủi ro để tránh kết luận nhầm.", "cases"),
+    ("B07", "Hàng đợi hồ sơ", "Nút tạm khoá thiết bị, yêu cầu sinh trắc học có tác động thật không?",
+     "tác vụ nhanh|tạm khóa thiết bị|gửi thông báo cho khách|nút mô phỏng",
+     "Không. Đây là **tác vụ mô phỏng** cho bản trình diễn: bấm vào chỉ ghi vào Nhật ký để thể hiện quy trình, không "
+     "tác động hệ thống ngân hàng thật. Khi triển khai thật các nút này sẽ nối với hệ thống core banking.", "cases"),
+    ("B08", "Hàng đợi hồ sơ", "Thẻ Thói quen khách cho biết gì?",
+     "thói quen của khách|so với thói quen|cái mới tô cam|hồ sơ hành vi",
+     "So các giao dịch trong hồ sơ với lịch sử của chính khách: thiết bị, tỉnh/thành, quốc gia IP, kênh thường dùng "
+     "và mức tiền trung vị. Giá trị **lần đầu xuất hiện** được tô cam – ví dụ máy lạ, tỉnh lạ, số tiền gấp nhiều lần mức nền.", "cases"),
+    ("B09", "Hàng đợi hồ sơ", "Sơ đồ liên kết khách hàng – thiết bị – merchant đọc thế nào?",
+     "đọc sơ đồ liên kết|màu trên sơ đồ|thiết bị dùng chung nhiều khách|liên kết thiết bị",
+     "Xanh lá: thiết bị đã đăng ký cho khách. Đỏ: thiết bị lạ. Cam: khách hàng **khác** cũng dùng chung thiết bị đó. "
+     "Một máy nối với nhiều khách là dấu hiệu số 8 theo TT 17/2024 (sửa đổi bởi TT 25/2025) – thường gặp ở đường dây chiếm tài khoản.", "cases"),
+    ("B10", "Hàng đợi hồ sơ", "Trạng thái hồ sơ gồm những gì?",
+     "chưa xử lý|đang xem xét|đã xử lý|xử lý một phần",
+     "**Chưa xử lý**: chưa có kết luận. **Đang xem xét / Xử lý một phần**: có giao dịch đã có kết luận, còn giao dịch chưa. "
+     "**Đã xử lý**: mọi giao dịch trong hồ sơ đã có kết luận (từ Data Pack hoặc từ chuyên viên).", "cases"),
+    ("B11", "Hàng đợi hồ sơ", "Kết luận của tôi có bị mất không?",
+     "quyết định có được lưu không|mất dữ liệu kết luận|lưu nhật ký ở đâu|tải nhật ký",
+     "Kết luận lưu trên máy chủ của app đến khi app khởi động lại. Trước khi kết thúc buổi làm việc, vào "
+     "**Dữ liệu & quản trị → Tải kết quả** để tải `audit_log.csv`.", "dl"),
+
+    # ---------------------------------------------------------------- C. Giám sát thời gian thực
+    ("C01", "Giám sát thời gian thực", "Trang Giám sát thời gian thực hoạt động thế nào?",
+     "thời gian thực là gì|giao dịch đến như thế nào|luồng thời gian thực|real time",
+     "Khi khách bấm thanh toán trên ứng dụng FS Pay, giao dịch được gửi về hệ thống, chấm điểm ngay (dưới 1 ms) và hiện "
+     "trên màn hình giám sát. Giao dịch bị tạm giữ vào thẻ **Cần xử lý ngay** để giám sát viên quyết định.", "live"),
+    ("C02", "Giám sát thời gian thực", "Chặn, Huỷ và Xác thực khác nhau thế nào?",
+     "nút chặn|nút huỷ|nút xác thực|chặn hay huỷ|xác thực là gì",
+     "**Chặn**: từ chối giao dịch. **Huỷ**: huỷ giao dịch và hoàn tiền cho khách. **Xác thực**: đã gọi xác minh với "
+     "khách, giao dịch được cho qua. Kết quả hiện ngay trên điện thoại của khách.", "live"),
+    ("C03", "Giám sát thời gian thực", "Sao màn hình giám sát không có giao dịch nào?",
+     "không thấy giao dịch|màn hình trống|đang chờ giao dịch|chưa có gì",
+     "Màn hình chỉ nhận giao dịch từ ứng dụng khách FS Pay – lịch sử 8.000 giao dịch BTC không được phát lên luồng. "
+     "Mở **FS Pay** (nút ở cuối menu), gửi một giao dịch, hoặc chọn tốc độ phát **bộ 1.000 giao dịch mẫu** ở bảng điều khiển.", "live"),
+    ("C04", "Giám sát thời gian thực", "Điểm màu vàng nằm dưới đường ngưỡng trên biểu đồ là gì?",
+     "điểm vàng dưới đường|biểu đồ điểm|đường đỏ đường vàng|hai đường ngưỡng",
+     "Đường đỏ là ngưỡng tạm giữ, đường chấm vàng là ngưỡng xác thực thêm. Điểm vàng nằm **dưới** đường vàng là giao "
+     "dịch điểm thấp nhưng **lớp ngữ cảnh** thấy lệch mạnh so với thói quen của chính khách, nên vẫn bắt xác thực thêm.", "live"),
+    ("C05", "Giám sát thời gian thực", "Thẻ Đối chiếu bộ mẫu là gì, có phải độ chính xác của mô hình không?",
+     "đối chiếu bộ mẫu|bộ 1000 giao dịch|gian lận lọt|kịch bản bộ mẫu",
+     "Bộ 1.000 giao dịch do nhóm **tự tạo để trình diễn** (89 gian lận theo 8 kịch bản). Thẻ này chỉ cho thấy hệ thống "
+     "phản ứng ra sao với từng kịch bản, **không** dùng để đánh giá mô hình. Chỉ số chính thức xem ở nhóm Mô hình & kiểm định.", "live"),
+    ("C06", "Giám sát thời gian thực", "Làm sao xoá hết giao dịch trên màn hình giám sát để demo lại?",
+     "làm mới luồng|reset luồng|xoá giao dịch demo|phát lại từ đầu",
+     "Mở ứng dụng FS Pay → bảng điều khiển → mục Bộ 1.000 giao dịch mẫu → bấm **Làm mới luồng**. Màn hình giám sát "
+     "dùng chung cho mọi người đang mở web, nên báo nhóm trước khi làm mới.", ""),
+
+    # ---------------------------------------------------------------- D. Ứng dụng khách FS Pay
+    ("D01", "Ứng dụng FS Pay", "Mở ứng dụng khách FS Pay ở đâu?",
+     "fs pay ở đâu|mở app khách|view=khach|app ngân hàng giả lập",
+     "Bấm **Mở ứng dụng khách FS Pay** ở cuối menu trái hoặc ở đầu trang Giám sát thời gian thực. Có thể gửi link "
+     "(đuôi `?view=khach`) sang điện thoại để vừa thao tác trên điện thoại vừa xem màn hình giám sát trên máy tính.", "live"),
+    ("D02", "Ứng dụng FS Pay", "Bảng điều khiển giả lập bên cạnh điện thoại dùng để làm gì?",
+     "bảng điều khiển giả lập|đổi ip|đổi thiết bị|đổi vị trí giao dịch|đổi ip trên app khách|chỉnh ip điện thoại|giả lập máy lạ",
+     "Bảng này đặt **hoàn cảnh** của giao dịch tiếp theo – những thông tin ngân hàng thu ngầm từ thiết bị: khách đăng "
+     "nhập, thiết bị (máy quen/máy lạ/máy root), vị trí, IP, kênh, số lần nhập sai OTP, giao dịch trước cách bao lâu. "
+     "Khách thật không nhìn thấy bảng này.", ""),
+    ("D03", "Ứng dụng FS Pay", "Các kịch bản nhanh trên FS Pay là gì?",
+     "kịch bản nhanh|mua sắm bình thường|máy lạ ở nước ngoài|thử sai otp liên tục|chuyển gấp 10 lần",
+     "Bấm một kịch bản là bảng điều khiển và màn hình thanh toán tự điền sẵn: **Mua sắm bình thường** (cho qua), "
+     "**Máy lạ ở nước ngoài**, **Thử sai OTP liên tục**, **Chuyển gấp 10 lần** ở merchant rủi ro. Sau đó chỉ cần bấm Tiếp tục.", ""),
+    ("D04", "Ứng dụng FS Pay", "Sao giao dịch bình thường của tôi lại bị CRITICAL?",
+     "giao dịch bình thường bị chặn|đi du lịch bị chặn|bị critical vô lý|gửi liên tục bị chặn",
+     "Thường do gửi nhiều giao dịch thử sát nhau: hai giao dịch trong 5 phút sẽ bật luật dồn dập R6. Ở mục **Giao dịch "
+     "trước của khách này diễn ra** chọn *Vài giờ trước*. Đi du lịch với máy quen, IP Việt Nam, số tiền bình thường sẽ được cho qua.", ""),
+    ("D05", "Ứng dụng FS Pay", "Phát bộ 1.000 giao dịch mẫu thế nào?",
+     "phát bộ mẫu|tốc độ phát|1 gd giây|10 gd giây|tạm dừng phát",
+     "Trên FS Pay, mục **Bộ 1.000 giao dịch mẫu**: chọn 1, 3 hoặc 10 giao dịch/giây (10 GD/giây chạy hết trong khoảng "
+     "2 phút), bấm **Tạm dừng** để dừng. Có thể vừa phát vừa gửi giao dịch tay.", ""),
+
+    # ---------------------------------------------------------------- E. Tra cứu & phân tích
+    ("E01", "Tra cứu & phân tích", "Tìm một giao dịch cụ thể thế nào?",
+     "tìm giao dịch|tra cứu mã giao dịch|tìm theo khách hàng|tìm theo merchant",
+     "Vào **Tra cứu giao dịch**, gõ mã giao dịch, mã khách hoặc merchant vào ô tìm kiếm rồi bấm **Tìm kiếm**. Dùng "
+     "**Bộ lọc nâng cao** để lọc theo từng luật, khoảng tiền, khung giờ, IP… Chọn giao dịch ở ô *Xem chi tiết* để mở chi tiết.", "tx"),
+    ("E02", "Tra cứu & phân tích", "Điểm rủi ro được tính thế nào?",
+     "công thức điểm|risk score|cách tính điểm|0,6 0,3 0,1|điểm tạo thành",
+     "Điểm rủi ro = 0,6 × hồi quy logistic + 0,3 × hệ luật + 0,1 × Isolation Forest, nằm trong khoảng 0–1. Thẻ **Điểm & lớp "
+     "ngữ cảnh** trong chi tiết giao dịch vẽ đóng góp của từng phần và các luật đang bật.", "tx"),
+    ("E03", "Tra cứu & phân tích", "Ngưỡng chặn và ngưỡng xác thực thêm là bao nhiêu?",
+     "ngưỡng là bao nhiêu|0,68|0,43|ngưỡng tạm giữ|ngưỡng cảnh báo",
+     "Với Data Pack BTC: điểm từ **0,6847** trở lên bị tạm giữ (HIGH/CRITICAL); từ **0,4349** đến dưới đó phải xác thực "
+     "thêm (MEDIUM). Ngưỡng được chọn tự động trong kiểm định chéo, không đặt tay.", "ev_tiers"),
+    ("E04", "Tra cứu & phân tích", "Tải danh sách giao dịch ra Excel được không?",
+     "xuất excel|tải csv|download giao dịch|tải xuống danh sách",
+     "Được. Trang **Tra cứu giao dịch** có nút **Tải xuống** cho danh sách đang lọc. Bộ kết quả đầy đủ (tệp nộp, hồ sơ, "
+     "chi tiết điểm) ở **Dữ liệu & quản trị → Tải kết quả**.", "tx"),
+    ("E05", "Tra cứu & phân tích", "Xem toàn bộ thói quen và liên kết của một khách ở đâu?",
+     "xem một khách hàng|tra cứu khách hàng|lịch sử khách|liên kết của khách",
+     "Vào **Khách hàng & liên kết**, chọn khách (sắp theo điểm cao nhất) hoặc gõ mã khách. Có 3 thẻ: Thói quen khách, "
+     "Liên kết thiết bị và Giao dịch của khách.", "cust"),
+
+    # ---------------------------------------------------------------- F. Mô hình & kiểm định
+    ("F01", "Mô hình & kiểm định", "Mô hình gồm những lớp nào?",
+     "kiến trúc mô hình|mô hình hoạt động thế nào|các tầng mô hình|thuật toán là gì",
+     "1) Hồ sơ hành vi từng khách (chỉ dùng giao dịch trong quá khứ). 2) Chấm điểm 3 tầng: hệ luật R1–R7, C1–C2 + hồi quy "
+     "logistic + Isolation Forest. 3) Lớp bất thường theo ngữ cảnh (v3.2) để bắt kiểu gian lận mới. 4) Xếp 3 tầng "
+     "hành động và gom hồ sơ.", "ev_kpi"),
+    ("F02", "Mô hình & kiểm định", "Các luật R1 đến R7, C1, C2 là gì?",
+     "luật r1|luật r6|r7 là gì|c1 là gì|danh sách luật|hệ luật",
+     "R1 mạnh/nhẹ: số tiền ≥ 5 lần / 3–5 lần mức nền. R2: thiết bị lạ mới ≤ 30 ngày. R3: IP nước ngoài và tỉnh khác nơi ở. "
+     "R4: merchant HIGH kèm tiền ≥ 2× hoặc tỉnh mới. R5: ≥ 2 lần thất bại trong 30 phút. R6: ≥ 2 giao dịch trong 5 phút. "
+     "R7: thiết bị đã dùng cho ≥ 2 khách. C1: thiết bị root/giả lập/rủi ro HIGH. C2: không xác thực.", "ev_rules"),
+    ("F03", "Mô hình & kiểm định", "Các luật dựa trên văn bản pháp lý nào?",
+     "căn cứ pháp lý|thông tư 17|tt25|quyết định 2345|nghị định 52",
+     "Chủ yếu dựa trên các dấu hiệu giao dịch đáng ngờ của Thông tư 17/2024 (sửa đổi bởi TT 25/2025), Quyết định "
+     "2345/QĐ-NHNN về xác thực sinh trắc học, Nghị định 52/2024 và các thông tư về an toàn thiết bị. Cột Căn cứ ở trang "
+     "Hiệu quả từng luật ghi rõ cho từng luật.", "ev_rules"),
+    ("F04", "Mô hình & kiểm định", "Recall can thiệp và recall chặn ngay khác nhau thế nào?",
+     "recall 93,8|recall 82,8|hai recall|recall can thiệp là gì|recall trên 90",
+     "**Recall chặn ngay** (82,8% – 106/128) đếm gian lận bị tạm giữ ngay. **Recall can thiệp** (93,8% – 120/128) đếm cả "
+     "gian lận bị tạm giữ lẫn bị bắt xác thực thêm – vì kẻ gian không qua được bước xác thực. Đổi lại 3,74% giao dịch "
+     "thật phải xác thực thêm vài giây.", "ev_tiers"),
+    ("F05", "Mô hình & kiểm định", "Mô hình có bắt được kiểu gian lận mới không?",
+     "gian lận kiểu mới|kiểu chưa từng thấy|ẩn từng kiểu|loto|novelty",
+     "Có kiểm chứng bằng thí nghiệm **ẩn từng kiểu**: bỏ hẳn nhãn của một kiểu khỏi dữ liệu học rồi xem hệ thống còn bắt "
+     "được không. Kết quả: can thiệp **117/128 (91,4%)**, trước khi có lớp ngữ cảnh là 96/128 (75%).", "ev_loto"),
+    ("F06", "Mô hình & kiểm định", "Lớp ngữ cảnh là gì?",
+     "lớp ngữ cảnh|hbos|lệch so với thói quen|context layer",
+     "Lớp không dùng nhãn gian lận: so từng đặc trưng rủi ro của giao dịch (số tiền, nhịp giao dịch, thiết bị, vị trí…) với "
+     "chính lịch sử của khách và giai đoạn quá khứ, cộng độ hiếm lại. Giao dịch lệch mạnh mà điểm còn thấp được đưa sang "
+     "**xác thực thêm**, không tự chặn. Ngân sách khoảng 3% giao dịch thật.", "ev_loto"),
+    ("F07", "Mô hình & kiểm định", "Isolation Forest dùng để làm gì?",
+     "isolation forest|phát hiện bất thường|anomaly|cây cô lập",
+     "Isolation Forest đo mức 'lạ' của giao dịch so với toàn bộ dữ liệu giai đoạn quá khứ, không cần nhãn. Nó đóng góp 10% "
+     "điểm rủi ro và nuôi hàng đợi **Nghi vấn mẫu mới**.", "ev_kpi"),
+    ("F08", "Mô hình & kiểm định", "Mô hình có dùng dữ liệu tương lai không?",
+     "rò rỉ dữ liệu|data leakage|dùng dữ liệu tương lai|kiểm tra trùng khớp",
+     "Không. Mọi đặc trưng chỉ dùng giao dịch xảy ra **trước** thời điểm chấm. Bằng chứng: trang **Chấm thời gian thực** "
+     "cho 8.000 giao dịch chạy lần lượt từng cái và so với chấm theo lô – trùng 100%.", "ev_rt"),
+    ("F09", "Mô hình & kiểm định", "Vì sao vẫn còn gian lận bị lọt?",
+     "gian lận bị lọt|bỏ sót|sao không bắt hết|false negative",
+     "Chủ yếu 2 nhóm: giao dịch **đầu tiên** của chuỗi dồn dập (lúc đó chưa có dấu hiệu gì) và **lừa đảo chính chủ** (khách "
+     "tự chuyển trên máy và mạng của mình). Nhóm thứ hai cần thêm dữ liệu ngoài giao dịch như người nhận mới, cuộc gọi đang "
+     "diễn ra – đã đưa vào lộ trình. Danh sách cụ thể ở **Lỗi & ngưỡng**.", "ev_err"),
+    ("F10", "Mô hình & kiểm định", "Báo động giả bao nhiêu?",
+     "báo nhầm|false positive|chặn nhầm khách thật|precision",
+     "Ở mức chặn ngay: **10 báo nhầm trên 1.872 giao dịch thật** (precision 0,914). Thêm khoảng 3,7% giao dịch thật phải "
+     "xác thực thêm (không bị chặn).", "ev_err"),
+    ("F11", "Mô hình & kiểm định", "Thay đổi ngưỡng thì kết quả thay đổi ra sao?",
+     "độ nhạy ngưỡng|kéo ngưỡng|đổi ngưỡng|đường pr",
+     "Vào **Lỗi & ngưỡng → Độ nhạy ngưỡng**, kéo thanh trượt để thấy đánh đổi giữa số gian lận bắt được và số báo nhầm. "
+     "Đây chỉ là để xem – ngưỡng dùng thật vẫn chọn tự động.", "ev_err"),
+    ("F12", "Mô hình & kiểm định", "Mô hình có thiên vị nhóm khách hay địa phương nào không?",
+     "công bằng|thiên vị|fairness|phân khúc khách",
+     "Trang **Công bằng** so tỉ lệ cảnh báo theo phân khúc khách và tỉnh/thành. Mô hình không dùng phân khúc hay nơi ở làm "
+     "đặc trưng trực tiếp; bảng này để theo dõi thiên lệch.", "ev_fair"),
+    ("F13", "Mô hình & kiểm định", "Kết quả kiểm định được tính thế nào, có đáng tin không?",
+     "kiểm định chéo|5 fold|nested cv|cách đánh giá|time split",
+     "Kiểm định chéo 5 lần, phân tầng; mô hình, trọng số luật và ngưỡng chỉ học trên phần huấn luyện của từng lần. Thêm "
+     "kiểm tra theo thời gian: học tháng 1–4, thử tháng 5–6 – recall can thiệp 86,4%.", "ev_kpi"),
+    ("F14", "Mô hình & kiểm định", "Chấm một giao dịch mất bao lâu?",
+     "tốc độ chấm|độ trễ|latency|bao nhiêu ms",
+     "Trung bình dưới 1 ms mỗi giao dịch khi chấm theo luồng (khoảng 0,5–0,8 ms tuỳ máy chủ).", "ev_rt"),
+
+    # ---------------------------------------------------------------- G. Dữ liệu & quản trị
+    ("G01", "Dữ liệu & quản trị", "Tải dữ liệu mới lên thế nào?",
+     "upload dữ liệu|tải data pack|tải file zip|chạy với dữ liệu khác",
+     "Vào **Dữ liệu & quản trị → Tải & chạy dữ liệu**, kéo tệp .zip hoặc nhiều tệp .csv vào ô tải lên rồi bấm **Chạy mô hình**. "
+     "Bắt buộc 4 tệp: transactions, customers, merchants, devices.", "data"),
+    ("G02", "Dữ liệu & quản trị", "Dữ liệu không có nhãn thì có chạy được không?",
+     "không có fraud_labels|không có nhãn|chỉ chấm điểm|mô hình học sẵn",
+     "Được. Không có `fraud_labels_sample.csv` thì app dùng **mô hình học sẵn** để chấm điểm; các trang kiểm định sẽ báo cần nhãn.", "data"),
+    ("G03", "Dữ liệu & quản trị", "Tệp nộp cho Ban tổ chức lấy ở đâu?",
+     "submission_output|tệp nộp|file nộp btc|tải kết quả",
+     "Vào **Dữ liệu & quản trị → Tải kết quả**: `submission_output.csv` đúng 9 cột và thứ tự dòng theo template BTC. Có nút "
+     "**Tải tất cả (.zip)** để lấy đủ bộ.", "dl"),
+    ("G04", "Dữ liệu & quản trị", "Học lại mô hình bằng kết luận của chuyên viên thế nào?",
+     "học lại|retrain|cập nhật mô hình|đưa kết luận vào mô hình",
+     "Vào **Học lại & quản trị**, bật **Tôi là quản trị viên**. Cần ít nhất 3 kết luận mới. Bấm **So sánh trước – sau** để "
+     "kiểm tra trên giai đoạn sau; chỉ khi không giảm chất lượng mới được bấm **Áp dụng**. Luôn có nút **Khôi phục phiên bản trước**.", "admin"),
+    ("G05", "Dữ liệu & quản trị", "Lỡ áp dụng mô hình mới mà kết quả tệ hơn thì sao?",
+     "rollback|khôi phục mô hình cũ|quay lại phiên bản trước",
+     "Vào **Học lại & quản trị** → bấm **Khôi phục phiên bản trước (Rollback)**.", "admin"),
+
+    # ---------------------------------------------------------------- H. Bảo mật & trợ lý
+    ("H01", "Bảo mật & trợ lý", "Trợ lý này có gửi dữ liệu khách hàng ra ngoài không?",
+     "có gửi dữ liệu ra ngoài không|chatgpt|ai bên ngoài|bảo mật trợ lý|lộ dữ liệu",
+     "Không. Trợ lý chạy **ngay trong app**, trả lời từ bộ hỏi–đáp nhóm soạn sẵn và lý do mô hình đã sinh, không gọi dịch "
+     "vụ AI bên ngoài. Mã khách, số tài khoản, số điện thoại gõ vào ô hỏi được tự che.", ""),
+    ("H02", "Bảo mật & trợ lý", "Trợ lý không trả lời được câu hỏi của tôi thì làm gì?",
+     "không hiểu câu hỏi|trợ lý trả lời sai|hỏi người thật|liên hệ hỗ trợ",
+     "Bấm **Gọi chuyên viên kỹ thuật** trong ô trợ lý, mô tả vấn đề và chọn mức khẩn. Phiếu tự đính kèm trang và hồ sơ đang "
+     "xem, được ghi vào Nhật ký quyết định.", ""),
+    ("H03", "Bảo mật & trợ lý", "Dữ liệu trong app có phải dữ liệu thật của khách không?",
+     "dữ liệu thật|tên khách thật|ẩn danh|bảo vệ dữ liệu cá nhân",
+     "Không. Data Pack BTC đã ẩn danh (chỉ có mã như CUST0175). Tên hiển thị ở FS Pay là tên **minh hoạ, hư cấu**, gắn với "
+     "mã khách để dễ trình diễn.", ""),
+    ("H04", "Bảo mật & trợ lý", "Ai được quyền học lại hay xoá kết luận?",
+     "phân quyền|quản trị viên|ai được xoá|đăng nhập",
+     "Bản trình diễn chưa có đăng nhập: công tắc **Tôi là quản trị viên** chỉ mô phỏng phân quyền. Khi triển khai thật sẽ "
+     "phân quyền theo tài khoản: chuyên viên ghi kết luận, quản trị viên mới được học lại và xoá.", "admin"),
+    ("H05", "Bảo mật & trợ lý", "Báo lỗi web cho nhóm kỹ thuật thế nào?",
+     "web bị lỗi|báo lỗi|nút không bấm được|lỗi hiển thị",
+     "Mở ô trợ lý → **Gọi chuyên viên kỹ thuật** → mô tả lỗi (bấm nút nào, thấy gì) → chọn *Khẩn – đang chặn xử lý* nếu "
+     "không làm tiếp được → **Gửi phiếu**.", ""),
+]
+
+if __name__ == "__main__":
+    out = Path(__file__).with_name("hoi_dap.csv")
+    with out.open("w", encoding="utf-8-sig", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["id", "nhom", "cau_hoi", "cach_hoi_khac", "tra_loi", "di_toi"])
+        w.writerows(Q)
+    print(f"{len(Q)} câu → {out}")
