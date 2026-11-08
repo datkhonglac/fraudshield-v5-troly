@@ -3132,7 +3132,6 @@ def as_guide(res):
         if c[1].form_submit_button("", icon=":material/send:", type="primary") and q.strip():
             _as_ask(q)
             st.rerun(scope="fragment")
-    st.caption("Mã khách, số tài khoản, số điện thoại trong câu hỏi được tự che trước khi xử lý.")
 
 
 def assistant_body(res):
