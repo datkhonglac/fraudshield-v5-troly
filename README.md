@@ -1,7 +1,7 @@
 # Fraud Shield v5 – Web app Streamlit (menu nhiều tầng + trợ lý nội bộ)
 
 Team **Round Robin** · Festival Chuyển đổi số 2026 · Bảng B · case Digital Payment Fraud Shield.
-Giao diện v4: menu 4 nhóm có mục con, trang dài chia thành thẻ. v5 thêm **ô trợ lý ở góc dưới phải**. Lõi mô hình giữ nguyên bản v3.2.
+Giao diện v4: menu 6 nhóm có mục con, trang dài chia thành thẻ. v5 thêm **ô trợ lý ở góc dưới phải**. Lõi mô hình giữ nguyên bản v3.2.
 
 Bàn làm việc chống gian lận thanh toán số · Festival Chuyển đổi số 2026 · Bảng B · bản vòng Chung kết.
 Mọi đặc trưng chỉ dùng thông tin có trước hoặc tại thời điểm giao dịch; Isolation Forest và bảng phân vị
@@ -25,17 +25,18 @@ Kết quả trên Data Pack BTC (kiểm định 5-fold, ngưỡng lồng – s�
 | Kiểu gian lận chưa từng học (ẩn từng kiểu) | chặn 76/128 · can thiệp **117/128 (91,4%)** – v3.1: 96/128 (75%) |
 | Chấm điểm thời gian thực | trùng 100% với chấm theo lô trên 8.000 giao dịch (cả lớp ngữ cảnh) · ~0,5 ms/giao dịch |
 
-## Ứng dụng có gì – menu 4 nhóm
+## Ứng dụng có gì – menu 6 nhóm
 
 Bấm tên nhóm để mở/đóng danh sách mục con; bấm mục con để chỉ hiện đúng phần đó; trang dài chia thành thẻ.
 
 | Nhóm | Mục con | Thẻ trong trang |
 |---|---|---|
-| **Xử lý cảnh báo** | Hàng đợi hồ sơ | Tóm tắt & kết luận · Giao dịch trong hồ sơ · Thói quen khách · Liên kết thiết bị · Nhật ký |
-| | Giám sát thời gian thực | Cần xử lý ngay · Biểu đồ điểm · Giao dịch đang đến · Đối chiếu bộ mẫu |
-| | Nhật ký quyết định | – |
 | **Tra cứu & phân tích** | Tổng quan · Tra cứu giao dịch · Khách hàng & liên kết | Chi tiết giao dịch: Điểm & lớp ngữ cảnh · Lệch so với thói quen · Thông tin |
-| **Mô hình & kiểm định** | Chỉ số chính · 3 tầng hành động · Kiểu gian lận mới · Hiệu quả từng luật · Lỗi & ngưỡng · Công bằng · Chấm thời gian thực | Kiểu mới: Kết quả · Đánh đổi ngân sách · Cách hoạt động; Lỗi & ngưỡng: Bỏ sót · So sánh cấu hình · Độ nhạy ngưỡng |
+| **Xử lý cảnh báo** | Hàng đợi hồ sơ | Tóm tắt & kết luận · Giao dịch trong hồ sơ · Thói quen khách · Liên kết thiết bị · Nhật ký |
+| | Nhật ký quyết định | – |
+| **Kiểm định** | Chỉ số chính · 3 tầng hành động · Hiệu quả từng luật · Lỗi & ngưỡng · Công bằng · Chấm thời gian thực | Lỗi & ngưỡng: Bỏ sót · So sánh cấu hình · Độ nhạy ngưỡng |
+| **Giám sát thời gian thực** | Giám sát thời gian thực | Cần xử lý ngay · Biểu đồ điểm · Giao dịch đang đến · Đối chiếu bộ mẫu |
+| **Bắt gian lận mới** | Kiểu gian lận mới | Kết quả · Đánh đổi ngân sách · Cách hoạt động |
 | **Dữ liệu & quản trị** | Tải & chạy dữ liệu · Tải kết quả · Học lại & quản trị | – |
 
 Ứng dụng khách mô phỏng **FS Pay** là trang riêng: thêm `?view=khach` vào cuối link (có nút ở cuối menu và ở trang

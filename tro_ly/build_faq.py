@@ -19,9 +19,7 @@ Q = [
      "chọn một hồ sơ rồi đọc thẻ **Tóm tắt & kết luận** và ghi quyết định. Muốn xem toàn cảnh thì vào **Tổng quan**.", "cases"),
     ("A03", "Bắt đầu", "Menu bên trái được chia thế nào?",
      "các nhóm trong menu|menu có những gì|cấu trúc menu|tìm chức năng ở đâu",
-     "Menu có 4 nhóm: **Xử lý cảnh báo** (hàng đợi, giám sát thời gian thực, nhật ký), **Tra cứu & phân tích** "
-     "(tổng quan, tra cứu giao dịch, khách hàng & liên kết), **Mô hình & kiểm định** (các chỉ số đánh giá mô hình) và "
-     "**Dữ liệu & quản trị** (tải dữ liệu, tải kết quả, học lại). Bấm tên nhóm để mở/đóng, bấm mục con để mở trang.", ""),
+     "Menu có 6 nhóm, theo thứ tự: **Tra cứu & phân tích** (tổng quan, tra cứu giao dịch, khách hàng & liên kết), **Xử lý cảnh báo** (hàng đợi hồ sơ, nhật ký quyết định), **Kiểm định** (các chỉ số đánh giá mô hình), **Giám sát thời gian thực**, **Bắt gian lận mới** (kiểu gian lận chưa từng học) và **Dữ liệu & quản trị** (tải dữ liệu, tải kết quả, học lại). Bấm tên nhóm để mở/đóng, bấm mục con để mở trang.", ""),
     ("A04", "Bắt đầu", "Các thẻ ngang trong trang là gì?",
      "thẻ là gì|tab trong trang|sao không thấy hết nội dung|chuyển phần trong trang",
      "Trang dài được chia thành thẻ, giống mục lục. Chỉ thẻ đang chọn được hiện để màn hình gọn; bấm tên thẻ khác "
@@ -105,7 +103,7 @@ Q = [
     ("C05", "Giám sát thời gian thực", "Thẻ Đối chiếu bộ mẫu là gì, có phải độ chính xác của mô hình không?",
      "đối chiếu bộ mẫu|bộ 1000 giao dịch|gian lận lọt|kịch bản bộ mẫu",
      "Bộ 1.000 giao dịch do nhóm **tự tạo để trình diễn** (89 gian lận theo 8 kịch bản). Thẻ này chỉ cho thấy hệ thống "
-     "phản ứng ra sao với từng kịch bản, **không** dùng để đánh giá mô hình. Chỉ số chính thức xem ở nhóm Mô hình & kiểm định.", "live"),
+     "phản ứng ra sao với từng kịch bản, **không** dùng để đánh giá mô hình. Chỉ số chính thức xem ở nhóm Kiểm định.", "live"),
     ("C06", "Giám sát thời gian thực", "Làm sao xoá hết giao dịch trên màn hình giám sát để demo lại?",
      "làm mới luồng|reset luồng|xoá giao dịch demo|phát lại từ đầu",
      "Mở ứng dụng FS Pay → bảng điều khiển → mục Bộ 1.000 giao dịch mẫu → bấm **Làm mới luồng**. Màn hình giám sát "

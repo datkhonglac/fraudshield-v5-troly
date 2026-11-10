@@ -7,8 +7,8 @@ Triển khai:      Streamlit Community Cloud – chọn tệp chính là streaml
 Lõi mô hình:     fraud_core.py (giống hệt pipeline trong hồ sơ dự thi)
 
 Phiên bản v4 (giao diện) · lõi mô hình v3.2 (lớp bất thường theo ngữ cảnh).
-Menu trái chia 4 nhóm – Xử lý cảnh báo · Tra cứu & phân tích · Mô hình & kiểm định · Dữ liệu & quản trị – mỗi nhóm
-có các mục con; trang dài chia thành thẻ, chỉ hiện thẻ đang chọn. Chấm điểm thời gian thực: fs_realtime.py (trùng 100% với chấm theo lô).
+Menu trái chia 6 nhóm – Tra cứu & phân tích · Xử lý cảnh báo · Kiểm định · Giám sát thời gian thực · Bắt gian lận
+mới · Dữ liệu & quản trị – mỗi nhóm có các mục con; trang dài chia thành thẻ, chỉ hiện thẻ đang chọn. Chấm điểm thời gian thực: fs_realtime.py (trùng 100% với chấm theo lô).
 """
 import hashlib
 import html
@@ -83,24 +83,26 @@ TYPE_ORDER = list(dict.fromkeys([t for _, t in RISK_TYPES] + [OTHER_TYPE]))
 FRAUD_VN = {"FAILED_THEN_SUCCESS": "Thử sai rồi thành công", "VELOCITY_BURST": "Giao dịch dồn dập",
             "AMOUNT_SPIKE": "Số tiền tăng vọt", "NEW_DEVICE": "Thiết bị mới",
             "LOCATION_ANOMALY": "Nơi lạ, IP nước ngoài", "HIGH_RISK_MERCHANT": "Merchant rủi ro cao"}
-# Menu 4 nhóm lớn, mỗi nhóm có mục con: (mã, nhãn, biểu tượng, tiêu đề trang)
+# Menu 6 nhóm, mỗi nhóm có mục con: (mã, nhãn, biểu tượng, tiêu đề trang)
 GROUPS = [
-    ("ops", "Xử lý cảnh báo", [
-        ("cases", "Hàng đợi hồ sơ", ":material/inbox:", "Hàng đợi hồ sơ cần xử lý"),
-        ("live", "Giám sát thời gian thực", ":material/bolt:", "Giám sát giao dịch theo thời gian thực"),
-        ("log", "Nhật ký quyết định", ":material/history:", "Nhật ký quyết định và tác vụ")]),
     ("ana", "Tra cứu & phân tích", [
         ("overview", "Tổng quan", ":material/space_dashboard:", "Tổng quan kết quả phát hiện rủi ro"),
         ("tx", "Tra cứu giao dịch", ":material/payments:", "Tra cứu giao dịch"),
         ("cust", "Khách hàng & liên kết", ":material/hub:", "Thói quen khách hàng và liên kết thiết bị")]),
-    ("model", "Mô hình & kiểm định", [
+    ("ops", "Xử lý cảnh báo", [
+        ("cases", "Hàng đợi hồ sơ", ":material/inbox:", "Hàng đợi hồ sơ cần xử lý"),
+        ("log", "Nhật ký quyết định", ":material/history:", "Nhật ký quyết định và tác vụ")]),
+    ("model", "Kiểm định", [
         ("ev_kpi", "Chỉ số chính", ":material/verified_user:", "Chỉ số kiểm định chính"),
         ("ev_tiers", "3 tầng hành động", ":material/stacked_bar_chart:", "Bộ chỉ số 3 tầng hành động"),
-        ("ev_loto", "Kiểu gian lận mới", ":material/new_releases:", "Khả năng bắt kiểu gian lận mới"),
         ("ev_rules", "Hiệu quả từng luật", ":material/rule:", "Hiệu quả từng luật"),
         ("ev_err", "Lỗi & ngưỡng", ":material/tune:", "Phân tích lỗi và độ nhạy ngưỡng"),
         ("ev_fair", "Công bằng", ":material/balance:", "Công bằng theo phân khúc và địa phương"),
         ("ev_rt", "Chấm thời gian thực", ":material/speed:", "Kiểm tra chấm thời gian thực")]),
+    ("rt", "Giám sát thời gian thực", [
+        ("live", "Giám sát thời gian thực", ":material/bolt:", "Giám sát giao dịch theo thời gian thực")]),
+    ("novel", "Bắt gian lận mới", [
+        ("ev_loto", "Kiểu gian lận mới", ":material/new_releases:", "Khả năng bắt kiểu gian lận mới")]),
     ("data", "Dữ liệu & quản trị", [
         ("data", "Tải & chạy dữ liệu", ":material/upload_file:", "Tải Data Pack, kiểm tra và chạy mô hình"),
         ("dl", "Tải kết quả", ":material/download:", "Tải kết quả"),
@@ -715,7 +717,7 @@ def sidebar(res):
     if cur not in {k for k, *_ in NAV}:
         cur = "cases"
     st.session_state.nav = cur
-    op = st.session_state.setdefault("nav_open", {"ops": True, "model": True})
+    op = st.session_state.setdefault("nav_open", {"ana": True, "ops": True, "model": True, "rt": True, "novel": True})
     for g, _, items in GROUPS:                       # nhóm chứa trang đang xem luôn mở
         if any(k == cur for k, *_ in items):
             op[g] = True
