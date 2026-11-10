@@ -1377,6 +1377,31 @@ def txn_queue(res, kind):
         sim_actions(res, "", r.device_id, f"tq_{r.transaction_id}")
 
 
+def case_labels(res, view):
+    """Nhãn BTC của từng hồ sơ (gộp nhãn các giao dịch trong hồ sơ) và so với kết quả tạm giữ của mô hình."""
+    lv = res.get("lab_view")
+    lab = {} if lv is None else dict(zip(lv.transaction_id, zip(lv.y, lv.fraud_type)))
+    txt, cmp_ = [], []
+    for ids in view.transaction_ids:
+        ids = ids.split(";")
+        got = [lab[t] for t in ids if t in lab]
+        fr = [ft for y, ft in got if y == 1]
+        if fr:
+            kinds = sorted({FRAUD_VN.get(f, f) for f in fr})
+            txt.append("Gian lận · " + ", ".join(kinds) + (f" ({len(fr)}/{len(ids)} GD)" if len(fr) < len(ids) else ""))
+            cmp_.append("Đúng")
+        elif got and len(got) == len(ids):
+            txt.append("Bình thường")
+            cmp_.append("Bắt sai")
+        elif got:
+            txt.append(f"Bình thường ({len(got)}/{len(ids)} GD, còn lại chưa có nhãn)")
+            cmp_.append("Chưa đủ nhãn")
+        else:
+            txt.append("Chưa có nhãn")
+            cmp_.append("–")
+    return txt, cmp_
+
+
 def page_cases(res):
     df, cases, rid = res["df"], res["cases"], res["rid"]
     if cases.empty:
@@ -1410,14 +1435,15 @@ def page_cases(res):
         return
 
     with card("cs_filter"):
-        c = st.columns([1, 1.2, 1, 2.2, 0.8], vertical_alignment="bottom")
+        c = st.columns([1, 1.2, 1, 1, 1.9, 0.8], vertical_alignment="bottom")
         lv = c[0].selectbox("Mức rủi ro", ["Tất cả", "CRITICAL", "HIGH"], key=f"cs_lv_{rid}")
         ty = c[1].selectbox("Loại rủi ro", ["Tất cả"] + [t for t in TYPE_ORDER if t in set(cases.risk_type)], key=f"cs_ty_{rid}")
         stv = c[2].selectbox("Trạng thái", ["Tất cả", "Chưa xử lý", "Đang xác minh", "Xử lý một phần", "Đã xử lý"],
                              key=f"cs_st_{rid}")
-        q = c[3].text_input("Tìm kiếm", placeholder="Tìm theo mã hồ sơ, khách hàng, giao dịch…", key=f"cs_q_{rid}"
+        lbf = c[3].selectbox("Nhãn BTC", ["Tất cả", "Gian lận", "Bình thường", "Chưa có nhãn"], key=f"cs_lb_{rid}")
+        q = c[4].text_input("Tìm kiếm", placeholder="Tìm theo mã hồ sơ, khách hàng, giao dịch…", key=f"cs_q_{rid}"
                             ).strip().upper()
-        c[4].button("Tìm kiếm", type="primary", width="stretch", key=f"cs_go_{rid}")
+        c[5].button("Tìm kiếm", type="primary", width="stretch", key=f"cs_go_{rid}")
     view = cases
     if chip == QCHIPS[1]:
         view = urgent
@@ -1438,41 +1464,66 @@ def page_cases(res):
         return
 
     bulk = ty != "Tất cả"
-    c1, c2 = st.columns([1, 1.55], gap="medium")
-    with c1, card("cs_list"):
+    lab_txt, lab_cmp = case_labels(res, view)
+    view = view.assign(nhan_btc=lab_txt, so_nhan=lab_cmp)
+    if lbf != "Tất cả":
+        view = view[view.nhan_btc.str.startswith(lbf)].reset_index(drop=True)
+        if view.empty:
+            st.warning("Không có hồ sơ nào khớp bộ lọc.", icon=":material/search_off:")
+            return
+    with card("cs_list"):
+        n_ok, n_bad = int((view.so_nhan == "Đúng").sum()), int((view.so_nhan == "Bắt sai").sum())
         title("Danh sách hồ sơ", f"{n0(len(view))} hồ sơ · sắp theo điểm cao nhất · "
               + ("tích nhiều dòng để xử lý hàng loạt cùng loại rủi ro" if bulk
-                 else "bấm một dòng để xem chi tiết · chọn một loại rủi ro để xử lý hàng loạt"))
+                 else "bấm một dòng để mở hồ sơ · chọn một loại rủi ro để xử lý hàng loạt"))
         tbl = pd.DataFrame({"Mã hồ sơ": view.case_id, "Khách hàng": view.customer_id,
+                            "Thời gian": pd.to_datetime(view.start_time).dt.strftime("%d/%m/%Y %H:%M"),
+                            "Số GD": view.n_transactions.astype(int), "Tổng tiền (₫)": view.total_amount,
                             "Mức rủi ro": view.case_level, "SLA": view.sla, "Loại rủi ro": view.risk_type,
-                            "Trạng thái": view.case_status, "Điểm": view.max_risk_score})
+                            "Điểm": view.max_risk_score, "Trạng thái": view.case_status,
+                            "Nhãn BTC": view.nhan_btc, "So với nhãn": view.so_nhan})
         lvl_css = {l: f"color:{LEVEL_COLOR[l]};font-weight:700" for l in LEVELS}
+        cmp_css = {"Đúng": "color:#2B8A3E;font-weight:700", "Bắt sai": "color:#C92A2A;font-weight:700"}
         sty = (tbl.style.map(lambda x: lvl_css.get(x, ""), subset=["Mức rủi ro"])
                .map(lambda x: f"color:{STATUS_COLOR.get(x, '#475467')};font-weight:600", subset=["Trạng thái"])
-               .format({"Điểm": lambda x: d(x, 4)}))
-        ev = grid(sty, height=520, on_select="rerun", selection_mode="multi-row" if bulk else "single-row",
-                  key=f"cs_tbl_{rid}_{chip}_{ty}",
+               .map(lambda x: cmp_css.get(x, "color:#98A2B3"), subset=["So với nhãn"])
+               .map(lambda x: "color:#C92A2A;font-weight:600" if str(x).startswith("Gian lận") else
+                    ("color:#98A2B3" if x == "Chưa có nhãn" else ""), subset=["Nhãn BTC"])
+               .format({"Điểm": lambda x: d(x, 4), "Tổng tiền (₫)": lambda x: n0(x)}))
+        ev = grid(sty, height=480, on_select="rerun", selection_mode="multi-row" if bulk else "single-row",
+                  key=f"cs_tbl_{rid}_{chip}_{ty}_{lbf}",
                   column_config={"Mã hồ sơ": st.column_config.TextColumn(width="small"),
-                                 "SLA": st.column_config.TextColumn(width="small")})
+                                 "SLA": st.column_config.TextColumn(width="small"),
+                                 "Số GD": st.column_config.NumberColumn(width="small")})
         try:
             rows = [i for i in ev.selection.rows if i < len(view)]
         except Exception:  # noqa
             rows = []
+        st.caption(f"Nhãn BTC: trong {n0(len(view))} hồ sơ đang hiện có {n_ok} hồ sơ chứa giao dịch được BTC gắn nhãn gian lận, "
+                   f"{n_bad} hồ sơ mà mọi giao dịch đều được gắn nhãn bình thường (bắt sai), còn lại chưa có nhãn hoặc chưa đủ nhãn. Lưu ý: mô hình "
+                   "chạy trên toàn bộ dữ liệu đã học từ chính các nhãn này, nên mức khớp ở đây cao hơn thực tế; độ chính xác "
+                   "khách quan (mô hình chưa thấy nhãn) xem ở Kiểm định → Chỉ số chính.")
         if bulk:
             if st.button(f"Xử lý hàng loạt {len(rows)} hồ sơ đã chọn" if rows else "Xử lý hàng loạt (tích chọn hồ sơ trước)",
                          icon=":material/done_all:", type="primary", disabled=not rows, width="stretch",
                          key=f"bulk_{rid}_{ty}"):
                 bulk_dialog(res, view.iloc[rows], ty)
-    i = rows[0] if rows else 0
+    if not rows:
+        H('<div class="fs fs-note" style="text-align:center">Bấm vào một hồ sơ trong danh sách để mở thông tin chi tiết '
+          'và ghi kết luận.</div>')
+        return
+    i = rows[0]
     c = view.iloc[i]
     ids = c.transaction_ids.split(";")
     tx = df[df.transaction_id.isin(ids)].sort_values("datetime")
     first = tx.iloc[0]
-    with c2, card("cs_panel"):
+    with card("cs_panel"):
+        lb_col = "#C92A2A" if c.so_nhan == "Đúng" else ("#E8590C" if c.so_nhan == "Bắt sai" else "#98A2B3")
         st_color = STATUS_COLOR.get(c.case_status, "#475467")
         H(f"""<div class="fs"><div class="fs-phead"><div class="fs-h" style="font-size:17px">{e(c.case_id)} · {e(c.customer_id)}</div>
           {badge(c.case_level)}</div><div class="fs-sub" style="margin:2px 0 0">{e(c.risk_type)} · {int(c.n_transactions)} giao dịch ·
-          {money(c.total_amount)} · SLA {e(c.sla)} · <b style="color:{st_color}">{e(c.case_status)}</b></div></div>""")
+          {money(c.total_amount)} · SLA {e(c.sla)} · <b style="color:{st_color}">{e(c.case_status)}</b> ·
+          Nhãn BTC: <b style="color:{lb_col}">{e(c.nhan_btc)}</b></div></div>""")
         st.session_state.as_ctx = {"kind": "case", "case": c.case_id, "label": f"hồ sơ {c.case_id}", "level": c.case_level,
                                    "score": float(c.max_risk_score), "reason": c.top_reason, "type": c.risk_type,
                                    "rules": [F.RULE_NAMES[k].split(" – ")[0] for k in F.RULE_W if tx[k].sum() > 0]}
