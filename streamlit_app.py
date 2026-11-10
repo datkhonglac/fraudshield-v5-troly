@@ -1739,9 +1739,12 @@ def eval_lists(res, which):
                    f"{d(res['report'].get('threshold', 0), 4)} vẫn có thể chưa bị tạm giữ trong kiểm định.")
         if which == 3 and len(show):
             n_mp = int((show.ket_qua == "Xác thực thêm").sum())
+            lot = show[show.ket_qua == "Cho qua"].nhan.str.replace("Gian lận · ", "").value_counts()
+            lot_txt = ", ".join(f"{v} {k.lower()}" for k, v in lot.items())
             st.caption(f"{n_mp}/{len(show)} ca bỏ sót vẫn bị bắt xác thực thêm, nên tổng số ca bị can thiệp là "
-                       f"{rep['kpi']['intervene_tp']}/{rep['kpi']['n_fraud']}. Ca lọt hoàn toàn chủ yếu là giao dịch đầu chuỗi "
-                       "dồn dập và merchant rủi ro cao – chưa có dấu hiệu nào trong dữ liệu giao dịch để phân biệt.")
+                       f"{rep['kpi']['intervene_tp']}/{rep['kpi']['n_fraud']}. {len(show) - n_mp} ca lọt hoàn toàn"
+                       + (f" ({lot_txt})" if lot_txt else "") + ": hầu như không có dấu hiệu nào trong dữ liệu giao dịch "
+                       "để phân biệt, ví dụ giao dịch đầu tiên của chuỗi dồn dập.")
         if which == 4 and len(show):
             st.caption("Phần lớn ca bắt sai là giao dịch thật có đúng dấu hiệu của kẻ gian (máy mới, IP nước ngoài, tỉnh lạ, "
                        "số tiền lớn). Những ca này được tạm giữ chờ xác minh chứ không bị từ chối ngay.")
@@ -1876,7 +1879,7 @@ def eval_overview(res, b):
             items = "; ".join(f"{FRAUD_VN.get(t, t)} {A.get(t, 0)}/{cnt[t]} ({pct(A.get(t, 0) / cnt[t], 0)})" for t in weak)
             k = rep["kpi"]
             H(f'<div class="fs fs-warnbox"><div class="ic">!</div><div><div class="t">Điểm cần cải thiện</div>'
-              f'<div class="d">Recall chung ở mức chặn là {pct(b["recall"])}, nhưng tính riêng từng nhóm thì còn dưới mục tiêu '
+              f'<div class="d">Recall tạm giữ chung là {pct(b["recall"])}, nhưng tính riêng từng kiểu thì còn dưới mục tiêu '
               f'80%: {e(items)}. Merchant rủi ro trông giống giao dịch thường; giao dịch đầu tiên của chuỗi dồn dập chưa có '
               f'quá khứ để so. Tầng xác thực thêm nâng tỉ lệ can thiệp chung lên {pct(k["intervene_recall"])}. Hướng xử lý: '
               f'thêm dữ liệu về tài khoản nhận tiền, học lại khi có nhãn mới.</div></div></div>')
