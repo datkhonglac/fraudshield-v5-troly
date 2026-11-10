@@ -15,11 +15,11 @@ Q = [
      "xử lý, và giám sát giao dịch mới theo thời gian thực từ ứng dụng khách FS Pay.", ""),
     ("A02", "Bắt đầu", "Tôi nên bắt đầu từ đâu?",
      "mới vào thì làm gì|hướng dẫn nhanh|bắt đầu sử dụng|lần đầu dùng",
-     "Mở **Hàng đợi hồ sơ** (nhóm Xử lý cảnh báo), bấm chip **Khẩn cấp chưa xử lý** để thấy hồ sơ cần làm trước, "
-     "chọn một hồ sơ rồi đọc thẻ **Tóm tắt & kết luận** và ghi quyết định. Muốn xem toàn cảnh thì vào **Tổng quan**.", "cases"),
+     "Mở **Dashboard tổng quan** (nhóm Tra cứu & phân tích), kéo xuống mục 5 **Hàng đợi hồ sơ**, bấm chip **Khẩn cấp chưa xử lý** để thấy hồ sơ cần làm trước, "
+     "chọn một hồ sơ rồi đọc thẻ **Tóm tắt & kết luận** và ghi quyết định. Phần đầu Dashboard cho toàn cảnh 8.000 giao dịch.", "cases"),
     ("A03", "Bắt đầu", "Menu bên trái được chia thế nào?",
      "các nhóm trong menu|menu có những gì|cấu trúc menu|tìm chức năng ở đâu",
-     "Menu có 6 nhóm, theo thứ tự: **Tra cứu & phân tích** (tổng quan, tra cứu giao dịch, khách hàng & liên kết), **Xử lý cảnh báo** (hàng đợi hồ sơ, nhật ký quyết định), **Kiểm định** (các chỉ số đánh giá mô hình), **Giám sát thời gian thực**, **Bắt gian lận mới** (kiểu gian lận chưa từng học) và **Dữ liệu & quản trị** (tải dữ liệu, tải kết quả, học lại). Bấm tên nhóm để mở/đóng, bấm mục con để mở trang.", ""),
+     "Menu có 6 nhóm, theo thứ tự: **Tra cứu & phân tích** (Dashboard tổng quan kèm hàng đợi hồ sơ, tra cứu giao dịch, khách hàng & liên kết), **Xử lý cảnh báo** (nhật ký quyết định), **Kiểm định** (các chỉ số đánh giá mô hình), **Giám sát thời gian thực**, **Bắt gian lận mới** (kiểu gian lận chưa từng học) và **Dữ liệu & quản trị** (tải dữ liệu, tải kết quả, học lại). Bấm tên nhóm để mở/đóng, bấm mục con để mở trang.", ""),
     ("A04", "Bắt đầu", "Các thẻ ngang trong trang là gì?",
      "thẻ là gì|tab trong trang|sao không thấy hết nội dung|chuyển phần trong trang",
      "Trang dài được chia thành thẻ, giống mục lục. Chỉ thẻ đang chọn được hiện để màn hình gọn; bấm tên thẻ khác "

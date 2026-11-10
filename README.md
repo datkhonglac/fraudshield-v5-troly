@@ -31,10 +31,9 @@ Bấm tên nhóm để mở/đóng danh sách mục con; bấm mục con để c
 
 | Nhóm | Mục con | Thẻ trong trang |
 |---|---|---|
-| **Tra cứu & phân tích** | Tổng quan · Tra cứu giao dịch · Khách hàng & liên kết | Chi tiết giao dịch: Điểm & lớp ngữ cảnh · Lệch so với thói quen · Thông tin |
-| **Xử lý cảnh báo** | Hàng đợi hồ sơ | Tóm tắt & kết luận · Giao dịch trong hồ sơ · Thói quen khách · Liên kết thiết bị · Nhật ký |
-| | Nhật ký quyết định | – |
-| **Kiểm định** | Chỉ số chính · 3 tầng hành động · Hiệu quả từng luật · Lỗi & ngưỡng · Công bằng · Chấm thời gian thực | Lỗi & ngưỡng: Bỏ sót · So sánh cấu hình · Độ nhạy ngưỡng |
+| **Tra cứu & phân tích** | Dashboard tổng quan · Tra cứu giao dịch · Khách hàng & liên kết | Dashboard (chỉ đếm trên 8.000 giao dịch): 1 Đã phân tích bao nhiêu → 2 Phát hiện bao nhiêu rủi ro → 3 Nguyên nhân → 4 Isolation Forest khám phá thêm (20 giao dịch bất thường nhất ngoài nhóm tạm giữ) → 5 Hàng đợi hồ sơ. Tra cứu mặc định xếp CRITICAL → HIGH → MEDIUM → LOW |
+| **Xử lý cảnh báo** | Nhật ký quyết định | – |
+| **Kiểm định** (2.000 giao dịch có nhãn) | Chỉ số chính · 3 tầng hành động · Hiệu quả từng luật · Lỗi & ngưỡng · Công bằng · Chấm thời gian thực | Chỉ số chính: Tổng hợp · Danh sách giao dịch có nhãn · Bắt đúng · Bỏ sót · Bắt sai · Có hiệu chỉnh được không? |
 | **Giám sát thời gian thực** | Giám sát thời gian thực | Cần xử lý ngay · Biểu đồ điểm · Giao dịch đang đến · Đối chiếu bộ mẫu |
 | **Bắt gian lận mới** | Kiểu gian lận mới | Kết quả · Đánh đổi ngân sách · Cách hoạt động |
 | **Dữ liệu & quản trị** | Tải & chạy dữ liệu · Tải kết quả · Học lại & quản trị | – |

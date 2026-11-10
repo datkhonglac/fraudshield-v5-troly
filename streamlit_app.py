@@ -86,11 +86,10 @@ FRAUD_VN = {"FAILED_THEN_SUCCESS": "Thử sai rồi thành công", "VELOCITY_BUR
 # Menu 6 nhóm, mỗi nhóm có mục con: (mã, nhãn, biểu tượng, tiêu đề trang)
 GROUPS = [
     ("ana", "Tra cứu & phân tích", [
-        ("overview", "Tổng quan", ":material/space_dashboard:", "Tổng quan kết quả phát hiện rủi ro"),
+        ("dash", "Dashboard tổng quan", ":material/space_dashboard:", "Dashboard toàn bộ giao dịch"),
         ("tx", "Tra cứu giao dịch", ":material/payments:", "Tra cứu giao dịch"),
         ("cust", "Khách hàng & liên kết", ":material/hub:", "Thói quen khách hàng và liên kết thiết bị")]),
     ("ops", "Xử lý cảnh báo", [
-        ("cases", "Hàng đợi hồ sơ", ":material/inbox:", "Hàng đợi hồ sơ cần xử lý"),
         ("log", "Nhật ký quyết định", ":material/history:", "Nhật ký quyết định và tác vụ")]),
     ("model", "Kiểm định", [
         ("ev_kpi", "Chỉ số chính", ":material/verified_user:", "Chỉ số kiểm định chính"),
@@ -109,7 +108,7 @@ GROUPS = [
         ("admin", "Học lại & quản trị", ":material/admin_panel_settings:", "Học lại có kiểm soát và quản trị")]),
 ]
 NAV = [it for _, _, items in GROUPS for it in items]
-NAV_ALIAS = {"eval": "ev_kpi"}
+NAV_ALIAS = {"eval": "ev_kpi", "cases": "dash", "overview": "dash"}
 
 st.set_page_config(page_title="Fraud Shield · Digital Payment Risk Console", page_icon="🛡️",
                    layout="wide", initial_sidebar_state="expanded")
@@ -199,6 +198,7 @@ box-shadow:0 1px 2px rgba(15,23,42,.04)}
 .fs-k .tag{position:absolute;right:14px;top:14px;background:var(--cbg);color:var(--c);font-size:11.5px;font-weight:700;
 padding:2px 9px;border-radius:999px}
 .fs-k:has(.tag){padding-top:36px}.fs-k:has(.tag) .tag{top:10px}
+.fs-step{display:flex;gap:12px;align-items:flex-start;margin:0 0 6px}.fs-step .no{flex:none;width:30px;height:30px;border-radius:50%;background:#0B2552;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;margin-top:2px}.fs-step .t{font-size:17px;font-weight:700;color:#0B2552}.fs-step .s{font-size:12.5px;color:#5B6577;margin-top:2px}.fs-note{background:#EEF3FF;border:1px solid #CFDBFA;border-radius:12px;padding:10px 14px;font-size:13px;color:#1F2937;margin:0 0 12px;line-height:1.55}
 .fs-k::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:0 4px 4px 0;background:var(--c)}
 /* ---------- huy hiệu ---------- */
 .fs-badge{display:inline-block;padding:3px 10px;border-radius:7px;font-size:11.5px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
@@ -715,7 +715,7 @@ def _toggle_group(g):
 def sidebar(res):
     cur = NAV_ALIAS.get(st.session_state.get("nav", "cases"), st.session_state.get("nav", "cases"))
     if cur not in {k for k, *_ in NAV}:
-        cur = "cases"
+        cur = "dash"
     st.session_state.nav = cur
     op = st.session_state.setdefault("nav_open", {"ana": True, "ops": True, "model": True, "rt": True, "novel": True})
     for g, _, items in GROUPS:                       # nhóm chứa trang đang xem luôn mở
@@ -732,7 +732,7 @@ def sidebar(res):
                 with st.container(key=f"navg_{g}"):
                     for k, lab, ic, _ in items:
                         badge_n = ""
-                        if k == "cases" and res is not None:
+                        if k == "dash" and res is not None:
                             badge_n = f" · {n0(st.session_state.get('n_open_cases', 0))}" if st.session_state.get("n_open_cases") else ""
                         st.button(lab + badge_n, icon=ic, key=f"nav_{k}", type="primary" if k == cur else "secondary",
                                   width="stretch", on_click=_go, args=(k,))
@@ -791,6 +791,145 @@ def no_data():
 
 
 # ============================================================================= 1. TỔNG QUAN
+# ============================================================================= DASHBOARD (8.000 giao dịch + hàng đợi)
+def dash_head(no, text, sub=None):
+    H(f'<div class="fs fs-step"><span class="no">{no}</span><div><div class="t">{e(text)}</div>'
+      + (f'<div class="s">{sub}</div>' if sub else "") + "</div></div>")
+
+
+def label_map(res):
+    """Nhãn BTC của từng giao dịch (nếu có): 'Gian lận · kiểu' / 'Bình thường'; không có nhãn → chuỗi rỗng."""
+    lv = res.get("lab_view")
+    if lv is None:
+        return {}
+    return dict(zip(lv.transaction_id, np.where(lv.y == 1, "Gian lận · " + lv.fraud_type.map(lambda t: FRAUD_VN.get(t, t)),
+                                                "Bình thường")))
+
+
+def page_dash(res):
+    df, rep = res["df"], res["report"]
+    n = len(df)
+    cnt = rep["risk_level_counts"]
+    n_hold = int(df.predicted_fraud.sum())
+    lv = res.get("lab_view")
+    n_lab = 0 if lv is None else len(lv)
+    H(f'<div class="fs fs-note">Trang này <b>chỉ đếm</b> trên toàn bộ {n0(n)} giao dịch của Data Pack. '
+      f'{n0(n - n_lab)} giao dịch không có nhãn nên không tính được recall hay precision ở đây; '
+      f'độ chính xác của mô hình xem ở nhóm <b>Kiểm định</b> (đo trên {n0(n_lab)} giao dịch có nhãn).</div>')
+
+    # 1 · đã phân tích bao nhiêu
+    with card("db1"):
+        dash_head(1, "Hệ thống đã phân tích bao nhiêu giao dịch",
+                  f"{df.datetime.min():%d/%m/%Y} – {df.datetime.max():%d/%m/%Y} · mỗi giao dịch được chấm điểm rủi ro 0–1")
+        H('<div class="fs fs-kgrid" style="margin:6px 0 2px">' + "".join([
+            kcard(n0(n), "Giao dịch đã chấm điểm", BLUE, f"{n0(df.datetime.dt.date.nunique())} ngày dữ liệu"),
+            kcard(n0(df.customer_id.nunique()), "Khách hàng", TEAL,
+                  f"{n0(df.merchant_id.nunique())} merchant · {n0(df.device_id.nunique())} thiết bị"),
+            kcard(n0(n_lab), "Có nhãn của BTC", PURPLE, "dùng để học và kiểm định mô hình"),
+            kcard(n0(n - n_lab), "Chưa có nhãn", "#868E96", "chỉ chấm điểm, không đo được đúng/sai")]) + "</div>")
+
+    # 2 · phát hiện bao nhiêu rủi ro
+    with card("db2"):
+        dash_head(2, "Phát hiện bao nhiêu giao dịch rủi ro",
+                  f"{n0(n_hold)} giao dịch bị tạm giữ (CRITICAL + HIGH), gom thành {n0(len(res['cases']))} hồ sơ "
+                  f"ở mục 5 · {n0(cnt.get('MEDIUM', 0))} giao dịch phải xác thực thêm")
+        H('<div class="fs fs-kgrid" style="margin:6px 0 10px">' + "".join(
+            kcard(n0(cnt.get(l, 0)), f"{l} · {LEVEL_INFO[l][0]}", LEVEL_COLOR[l], LEVEL_INFO[l][1], pct(cnt.get(l, 0) / n))
+            for l in LEVELS) + "</div>")
+        c1, c2 = st.columns([1, 1.3], gap="medium")
+        with c1:
+            vals = [cnt.get(l, 0) for l in LEVELS]
+            fig = go.Figure(go.Pie(labels=[f"{l.title()} · {n0(v)}" for l, v in zip(LEVELS, vals)], values=vals, hole=0.58,
+                                   sort=False, direction="clockwise", textinfo="none",
+                                   marker=dict(colors=[LEVEL_COLOR[l] for l in LEVELS], line=dict(color="#fff", width=2)),
+                                   hovertemplate="%{label}<extra></extra>"))
+            fig.add_annotation(text=f"<b>{n0(n)}</b><br><span style='font-size:11px'>giao dịch</span>", showarrow=False,
+                               font=dict(size=17, color=INK))
+            style(fig, 260, legend=True)
+            fig.update_layout(legend=dict(orientation="v", x=1.0, xanchor="left", y=0.5, yanchor="middle"),
+                              margin=dict(l=6, r=10, t=8, b=6))
+            chart(fig, "db_pie")
+        with c2:
+            wk = df.datetime.dt.to_period("W").dt.start_time
+            tot = df.groupby(wk).size()
+            al = df[df.predicted_fraud == 1].groupby(wk[df.predicted_fraud == 1]).size().reindex(tot.index, fill_value=0)
+            x = [pd.Timestamp(w).strftime("%d/%m") for w in tot.index]
+            fig = go.Figure()
+            fig.add_scatter(x=x, y=tot.values, name="Tổng giao dịch", mode="lines", line=dict(color=BLUE, width=2.5),
+                            hovertemplate="Tuần %{x}<br>%{y} giao dịch<extra></extra>")
+            fig.add_scatter(x=x, y=al.values, name="Bị tạm giữ (trục phải)", mode="lines", yaxis="y2",
+                            line=dict(color=LEVEL_COLOR["CRITICAL"], width=2.5),
+                            hovertemplate="Tuần %{x}<br>%{y} bị tạm giữ<extra></extra>")
+            style(fig, 260, legend=True)
+            fig.update_layout(yaxis2=dict(overlaying="y", side="right", showgrid=False, rangemode="tozero"),
+                              legend=dict(orientation="h", y=-0.2, yanchor="top", x=0.5, xanchor="center"))
+            fig.update_yaxes(rangemode="tozero")
+            fig.update_xaxes(type="category", nticks=9, tickangle=0)
+            chart(fig, "db_trend")
+
+    # 3 · cảnh báo vì nguyên nhân gì
+    with card("db3"):
+        held = df[df.predicted_fraud == 1]
+        dash_head(3, "Cảnh báo vì nguyên nhân gì",
+                  f"Trên {n0(len(held))} giao dịch bị tạm giữ · một giao dịch có thể bật nhiều dấu hiệu cùng lúc")
+        c1, c2 = st.columns([1.3, 1], gap="medium")
+        with c1:
+            hits = pd.Series({F.RULE_NAMES[k]: int(held[k].sum()) for k in F.RULE_W}).sort_values()
+            hits = hits[hits > 0]
+            fig = go.Figure(go.Bar(x=hits.values, y=hits.index, orientation="h", marker_color=BLUE, text=hits.values,
+                                   textposition="outside", cliponaxis=False, width=0.62,
+                                   hovertemplate="%{y}<br>bật ở %{x} giao dịch bị tạm giữ<extra></extra>"))
+            style(fig, 330, legend=False)
+            fig.update_xaxes(range=[0, max(1, hits.max() if len(hits) else 1) * 1.18], title="Số giao dịch bị tạm giữ có dấu hiệu này")
+            chart(fig, "db_rules")
+        with c2:
+            vc = pd.Series(add_types(held)).value_counts()
+            rows = [{"t": t, "n": n0(v), "p": pct(v / max(1, len(held)))} for t, v in vc.items()]
+            H('<div class="fs fs-sub" style="margin:4px 0 6px"><b>Loại rủi ro chính</b> (dấu hiệu nặng nhất của mỗi giao dịch)</div>')
+            table(rows, [("t", "Loại rủi ro"), ("n", "Giao dịch"), ("p", "Tỷ lệ")], num_cols=("n", "p"))
+            n_door = int(rep.get("n_ctx_door", 0))
+            if n_door:
+                st.caption(f"Ngoài ra {n0(n_door)} giao dịch điểm thấp bị chuyển sang xác thực thêm vì lớp ngữ cảnh thấy lệch "
+                           "mạnh so với thói quen của chính khách hàng.")
+
+    # 4 · Isolation Forest khám phá thêm
+    with card("db4"):
+        rest = df[df.predicted_fraud == 0]
+        top = rest.nlargest(20, "anomaly_score")
+        labs = label_map(res)
+        lab_top = top.transaction_id.map(labs).fillna("")
+        n_fr = int(lab_top.str.startswith("Gian lận").sum())
+        n_ok = int((lab_top == "Bình thường").sum())
+        dash_head(4, "Isolation Forest khám phá thêm điều gì",
+                  f"20 giao dịch bất thường nhất theo Isolation Forest <b>nằm ngoài</b> {n0(n_hold)} giao dịch đã bị tạm giữ · "
+                  f"{n0(int((top.risk_level == 'MEDIUM').sum()))} đang ở mức xác thực thêm, "
+                  f"{n0(int((top.risk_level == 'LOW').sum()))} đang được cho qua")
+        rows = []
+        for i, r in enumerate(top.itertuples(), 1):
+            lb = labs.get(r.transaction_id, "")
+            lbh = (f'<span style="color:#C92A2A;font-weight:600">{e(lb)}</span>' if lb.startswith("Gian lận")
+                   else e(lb) if lb else '<span style="color:#98A2B3">chưa có nhãn</span>')
+            rows.append({"i": i, "id": f'<span class="mono">{e(r.transaction_id)}</span>', "t": f"{r.datetime:%d/%m %H:%M}",
+                         "c": e(r.customer_id), "a": n0(r.amount), "x": f"{r.amt_ratio:.1f}×".replace(".", ","),
+                         "lv": badge(r.risk_level), "s": d(r.risk_score, 3), "an": d(r.anomaly_score, 3),
+                         "q": "Có" if getattr(r, "novelty", 0) else "", "lb": lbh})
+        table(rows, [("i", "#"), ("id", "Mã giao dịch"), ("t", "Thời gian"), ("c", "Khách"), ("a", "Số tiền (₫)"),
+                     ("x", "Gấp mức nền"), ("lv", "Mức hiện tại"), ("s", "Điểm rủi ro"), ("an", "Điểm bất thường"),
+                     ("q", "Hàng đợi mẫu mới"), ("lb", "Nhãn BTC")],
+              num_cols=("i", "a", "x", "s", "an"), raw_cols=("id", "lv", "lb"))
+        st.caption(f"Trong 20 giao dịch này: {n_fr} có nhãn gian lận, {n_ok} có nhãn bình thường, {20 - n_fr - n_ok} chưa có nhãn. "
+                   f"Isolation Forest không dùng nhãn nên chỉ ra những giao dịch \"lạ\" mà luật và hồi quy logistic chưa coi là "
+                   f"rủi ro cao. Hệ thống đưa {n0(int(rep.get('n_novelty', 0)))} giao dịch loại này vào hàng đợi "
+                   "\"Nghi vấn mẫu mới\" để chuyên viên rà và gắn nhãn, phục vụ học lại.")
+
+    # 5 · hàng đợi hồ sơ
+    with card("db5"):
+        dash_head(5, "Hàng đợi hồ sơ cần xử lý",
+                  f"{n0(n_hold)} giao dịch bị tạm giữ của cùng khách, cách nhau ≤ 30 phút được gom thành "
+                  f"{n0(len(res['cases']))} hồ sơ · xếp theo điểm từ cao xuống thấp")
+    page_cases(res)
+
+
 def page_overview(res):
     df, rep = res["df"], res["report"]
     n = len(df)
@@ -976,7 +1115,8 @@ def page_tx(res):
                              key=f"tx_st_{rid}")
         f0 = c[2].date_input("Từ ngày", value=d0, min_value=d0, max_value=d1, format="DD/MM/YYYY", key=f"tx_d0_{rid}")
         f1 = c[3].date_input("Đến ngày", value=d1, min_value=d0, max_value=d1, format="DD/MM/YYYY", key=f"tx_d1_{rid}")
-        srt = c[4].selectbox("Sắp xếp", ["Điểm rủi ro cao nhất", "Mới nhất", "Số tiền lớn nhất"], key=f"tx_sort_{rid}")
+        srt = c[4].selectbox("Sắp xếp", ["Mức rủi ro cao nhất trước", "Điểm rủi ro cao nhất", "Mới nhất", "Số tiền lớn nhất"],
+                             key=f"tx_sort_{rid}")
         c = st.columns([2.6, 0.75, 0.95, 1], vertical_alignment="bottom")
         q = c[0].text_input("Tìm kiếm", placeholder="Tìm theo mã giao dịch, khách hàng, merchant…", key=f"tx_q_{rid}",
                             label_visibility="collapsed").strip().upper()
@@ -996,8 +1136,12 @@ def page_tx(res):
         v = v[v.transaction_id.str.upper().str.contains(q, regex=False) | v.customer_id.str.upper().str.contains(q, regex=False)
               | v.merchant_id.astype(str).str.upper().str.contains(q, regex=False)
               | v.merchant_category.astype(str).str.upper().str.contains(q, regex=False)]
-    v = v.sort_values({"Điểm rủi ro cao nhất": "priority_rank", "Mới nhất": "datetime", "Số tiền lớn nhất": "amount"}[srt],
-                      ascending=srt == "Điểm rủi ro cao nhất")
+    if srt == "Mức rủi ro cao nhất trước":
+        v = v.assign(_lv=v.risk_level.map({l: i for i, l in enumerate(LEVELS)})).sort_values(
+            ["_lv", "risk_score"], ascending=[True, False]).drop(columns="_lv")
+    else:
+        v = v.sort_values({"Điểm rủi ro cao nhất": "priority_rank", "Mới nhất": "datetime", "Số tiền lớn nhất": "amount"}[srt],
+                          ascending=srt == "Điểm rủi ro cao nhất")
     b = io.BytesIO()
     v[["transaction_id", "datetime", "customer_id", "amount", "merchant_id", "merchant_category", "payment_channel",
        "location", "risk_score", "risk_level", "status", "case_id", "alert_reason"]].to_csv(b, index=False, encoding="utf-8-sig")
@@ -1491,13 +1635,151 @@ def page_eval(res):
     b = rep["comparison_nested_cv"]["Gộp 3 tầng – có hồ sơ (B, chính thức)"]
     n_lab, n_fr = len(lv), int(lv.y.sum())
     ok = lambda x, t: f"mục tiêu ≥ {d(t, 2)} · {'đạt ✓' if x >= t else 'chưa đạt'}"  # noqa: E731
-    kgrid([kcard(d(b["precision"]), "Precision", BLUE, f"{b['fp']} báo nhầm / {n0(n_lab - n_fr)} giao dịch thật"),
-           kcard(d(b["recall"]), "Recall", GREEN, f"{b['tp']}/{n_fr} gian lận được bắt · {ok(b['recall'], .8)}"),
-           kcard(d(b["f1"]), "F1-score", PURPLE, ok(b["f1"], .75)),
-           kcard(d(b["pr_auc"]), "PR-AUC", LEVEL_COLOR["HIGH"], "chất lượng xếp hạng, không phụ thuộc ngưỡng")])
-    H(f'<div class="fs-sub" style="margin:-6px 0 8px">{n0(n_lab)} giao dịch có nhãn ({n0(n_fr)} gian lận) · 5-fold phân tầng · '
-      f'mô hình, trọng số luật và ngưỡng chỉ học trên phần huấn luyện của từng fold · seed {rep["seed"]}</div>')
-    eval_overview(res, b)
+    k = rep["kpi"]
+    H(f'<div class="fs fs-note">Mọi chỉ số ở nhóm Kiểm định đo trên <b>{n0(n_lab)} giao dịch có nhãn của BTC</b> '
+      f'({n0(n_fr)} gian lận, {n0(n_lab - n_fr)} bình thường), bằng kiểm định 5-fold: mỗi giao dịch được chấm bởi mô hình '
+      f'chưa từng thấy nhãn của nó. <b>Tạm giữ</b> = HIGH/CRITICAL. <b>Can thiệp</b> = tạm giữ hoặc xác thực thêm (MEDIUM).</div>')
+    kgrid([kcard(d(b["recall"]), "Recall tạm giữ", GREEN, f"{b['tp']}/{n_fr} gian lận bị tạm giữ · {ok(b['recall'], .8)}"),
+           kcard(d(k["intervene_recall"]), "Recall can thiệp", TEAL,
+                 f"{k['intervene_tp']}/{n_fr} gian lận bị tạm giữ hoặc xác thực thêm · {ok(k['intervene_recall'], .9)}"),
+           kcard(d(b["precision"]), "Precision tạm giữ", BLUE, f"{b['fp']} giao dịch thật bị tạm giữ nhầm / {n0(n_lab - n_fr)}"),
+           kcard(d(b["f1"]), "F1-score tạm giữ", PURPLE, f"{ok(b['f1'], .75)} · PR-AUC {d(b['pr_auc'])}")])
+    ET = ["Tổng hợp", "Danh sách giao dịch có nhãn", f"Bắt đúng ({b['tp']})", f"Bỏ sót ({b['fn']})",
+          f"Bắt sai ({b['fp']})", "Có hiệu chỉnh được không?"]
+    tab = subtabs("kpi", ET)
+    if tab == ET[0]:
+        eval_overview(res, b)
+    elif tab == ET[5]:
+        eval_tuning(res)
+    else:
+        eval_lists(res, ET.index(tab))
+
+
+FN_TYPE_WHY = {"HIGH_RISK_MERCHANT": "khách thật cũng hay mua ở merchant rủi ro cao",
+               "VELOCITY_BURST": "giao dịch đầu chuỗi dồn dập chưa có giao dịch trước để so",
+               "AMOUNT_SPIKE": "số tiền tăng nhưng các dấu hiệu khác bình thường",
+               "FAILED_THEN_SUCCESS": "số lần thất bại trước đó chưa đủ để bật luật R5",
+               "NEW_DEVICE": "thiết bị mới nhưng các dấu hiệu khác bình thường",
+               "LOCATION_ANOMALY": "nơi giao dịch lạ nhưng các dấu hiệu khác bình thường"}
+
+
+def lab_table(res):
+    """2.000 giao dịch có nhãn + kết quả ngoài mẫu (5-fold) + thông tin giao dịch."""
+    lv, df, rep = res["lab_view"], res["df"], res["report"]
+    cols = ["transaction_id", "datetime", "customer_id", "amount", "amt_ratio", "merchant_risk_level", "location",
+            "home_location", "ip_country"] + list(F.RULE_W)
+    t = lv.merge(df[cols], on="transaction_id", how="left")
+    t["ket_qua"] = np.where(t.hard, "Tạm giữ", np.where(t.intervene, "Xác thực thêm", "Cho qua"))
+    t["danh_gia"] = np.select([(t.y == 1) & t.hard, (t.y == 1) & ~t.hard, (t.y == 0) & t.hard],
+                              ["Bắt đúng", "Bỏ sót", "Bắt sai"], "Đúng là thật")
+    t["nhan"] = np.where(t.y == 1, "Gian lận · " + t.fraud_type.map(lambda x: FRAUD_VN.get(x, x)), "Bình thường")
+    t["luat"] = [", ".join(F.RULE_NAMES[k].split(" – ")[0] for k in F.RULE_W if r[k] == 1) or "–"
+                 for _, r in t[list(F.RULE_W)].iterrows()]
+    thr = rep.get("threshold")
+    why = []
+    for r in t.itertuples():
+        if r.danh_gia == "Bỏ sót":
+            parts = []
+            if r.luat == "–":
+                parts.append(f"không luật nào bật, số tiền {r.amt_ratio:.1f}× mức nền".replace(".", ","))
+            else:
+                parts.append(f"chỉ bật {r.luat}")
+            parts.append(FN_TYPE_WHY.get(r.fraud_type, ""))
+            parts.append("đã được xác thực thêm" if r.intervene else "lọt hoàn toàn")
+            why.append("; ".join(p for p in parts if p))
+        elif r.danh_gia == "Bắt sai":
+            sig = [r.luat] if r.luat != "–" else []
+            if r.amt_ratio >= 3:
+                sig.append(f"số tiền gấp {r.amt_ratio:.1f} lần mức nền".replace(".", ","))
+            if r.ip_country != "VN":
+                sig.append(f"IP {r.ip_country}")
+            if r.location != r.home_location:
+                sig.append(f"giao dịch ở {r.location}, nơi ở {r.home_location}")
+            why.append("giao dịch thật nhưng có " + "; ".join(sig) if sig else "điểm cao do tổ hợp đặc trưng")
+        else:
+            why.append("")
+    t["ly_do"] = why
+    return t.sort_values("score", ascending=False)
+
+
+def eval_lists(res, which):
+    t = lab_table(res)
+    rep = res["report"]
+    show = {1: t, 2: t[t.danh_gia == "Bắt đúng"], 3: t[t.danh_gia == "Bỏ sót"], 4: t[t.danh_gia == "Bắt sai"]}[which]
+    head = {1: ("Danh sách giao dịch có nhãn", f"{n0(len(t))} giao dịch · sắp theo điểm ngoài mẫu từ cao xuống thấp · "
+                                                "lọc theo cột Đánh giá để xem từng nhóm"),
+            2: ("Gian lận bị tạm giữ đúng", "Giao dịch gian lận có điểm ngoài mẫu vượt ngưỡng tạm giữ"),
+            3: ("Gian lận bị bỏ sót ở mức tạm giữ", "Có nhãn gian lận nhưng điểm dưới ngưỡng tạm giữ · cột Kết quả cho biết "
+                                                    "ca nào vẫn được xác thực thêm"),
+            4: ("Giao dịch thật bị tạm giữ nhầm", "Có nhãn bình thường nhưng điểm vượt ngưỡng tạm giữ")}[which]
+    with card(f"ev_list_{which}"):
+        title(*head)
+        if which == 1:
+            pick = st.segmented_control("Đánh giá", ["Tất cả", "Bắt đúng", "Bỏ sót", "Bắt sai", "Đúng là thật"],
+                                        default="Tất cả", key="ev_list_pick")
+            if pick and pick != "Tất cả":
+                show = show[show.danh_gia == pick]
+        if which in (3, 4) and len(show):
+            by = show.groupby("nhan").size().sort_values(ascending=False)
+            H('<div class="fs" style="margin:2px 0 10px">' + " ".join(
+                f'<span class="fs-flag on">{e(k)} · {v}</span>' for k, v in by.items()) + "</div>")
+        out = pd.DataFrame({"Mã giao dịch": show.transaction_id, "Thời gian": show.datetime.dt.strftime("%d/%m/%Y %H:%M"),
+                            "Khách": show.customer_id, "Nhãn BTC": show.nhan, "Điểm (ngoài mẫu)": show.score.round(3),
+                            "Kết quả": show.ket_qua, "Đánh giá": show.danh_gia, "Số tiền (₫)": show.amount,
+                            "Gấp mức nền": show.amt_ratio.round(1), "Luật bật": show.luat})
+        if which in (3, 4):
+            out["Vì sao"] = show.ly_do.values
+        grid(out, height=min(560, 38 + 35 * max(1, len(out))),
+             column_config={"Số tiền (₫)": st.column_config.NumberColumn(format="localized"),
+                            "Điểm (ngoài mẫu)": st.column_config.NumberColumn(format="%.3f"),
+                            "Gấp mức nền": st.column_config.NumberColumn(format="%.1f"),
+                            "Vì sao": st.column_config.TextColumn(width="large")})
+        st.caption("Điểm ngoài mẫu: mỗi giao dịch được chấm bởi mô hình học trên 4/5 dữ liệu còn lại. Ngưỡng tạm giữ cũng chọn "
+                   "riêng trong từng fold nên hơi khác nhau giữa các fold; vì vậy một giao dịch có điểm trên "
+                   f"{d(res['report'].get('threshold', 0), 4)} vẫn có thể chưa bị tạm giữ trong kiểm định.")
+        if which == 3 and len(show):
+            n_mp = int((show.ket_qua == "Xác thực thêm").sum())
+            st.caption(f"{n_mp}/{len(show)} ca bỏ sót vẫn bị bắt xác thực thêm, nên tổng số ca bị can thiệp là "
+                       f"{rep['kpi']['intervene_tp']}/{rep['kpi']['n_fraud']}. Ca lọt hoàn toàn chủ yếu là giao dịch đầu chuỗi "
+                       "dồn dập và merchant rủi ro cao – chưa có dấu hiệu nào trong dữ liệu giao dịch để phân biệt.")
+        if which == 4 and len(show):
+            st.caption("Phần lớn ca bắt sai là giao dịch thật có đúng dấu hiệu của kẻ gian (máy mới, IP nước ngoài, tỉnh lạ, "
+                       "số tiền lớn). Những ca này được tạm giữ chờ xác minh chứ không bị từ chối ngay.")
+
+
+TUNING = [("Hiện tại (ngưỡng F1 cao nhất)", "106 (82,8%)", "10", "0,914", "120", "76 · 117", "–"),
+          ("Hạ ngưỡng tạm giữ vừa phải", "114 (89,1%)", "26", "0,814", "120", "–", "Bắt sai gấp 2,6 lần"),
+          ("Hạ ngưỡng tạm giữ sâu", "118 (92,2%)", "56", "0,678", "120", "–", "Precision dưới 0,7"),
+          ("Chọn ngưỡng đủ 88% recall trên phần học", "112 (87,5%)", "10", "0,918", "120", "–",
+           "Không cải thiện khi tách theo thời gian"),
+          ("Như trên + tạm giữ ca MEDIUM lệch ngữ cảnh rất mạnh", "116 (90,6%)", "19", "0,859", "120", "–",
+           "Vượt 90% nhưng precision dưới 0,90; không cải thiện khi tách theo thời gian"),
+          ("Thêm đặc trưng kết hợp merchant rủi ro cao × số tiền", "111 (86,7%)", "6", "0,949", "118", "55 · 116",
+           "PR-AUC 0,940; bắt kiểu mới (tạm giữ) giảm 76 → 55")]
+
+
+def eval_tuning(res):
+    rep = res["report"]
+    k = rep["kpi"]
+    btc = rep.get("n_transactions") == 8000 and k.get("n_fraud") == 128 and k.get("hard_tp") == 106
+    with card("ev_tune"):
+        title("Có hiệu chỉnh được mô hình để bắt nhiều hơn không?",
+              "Nhóm thử 5 hướng trên Data Pack BTC, cùng kiểm định 5-fold với ngưỡng lồng như kết quả chính thức")
+        if not btc:
+            st.caption("Bảng thử nghiệm dưới đây chỉ áp dụng cho Data Pack của BTC.")
+            return
+        table([{"a": a, "b": b_, "c": c, "d": d_, "f": f, "g": g, "h": h} for a, b_, c, d_, f, g, h in TUNING],
+              [("a", "Cách hiệu chỉnh"), ("b", "Tạm giữ /128"), ("c", "Bắt sai /1.872"), ("d", "Precision"),
+               ("f", "Can thiệp /128"), ("g", "Ẩn từng kiểu: tạm giữ · can thiệp"), ("h", "Ghi chú")],
+              num_cols=("b", "c", "d", "f"), hl_row=0)
+        H('<div class="fs fs-sub" style="font-size:13.5px;color:#1F2937;line-height:1.65;margin-top:10px">'
+          '<b>Kết luận của nhóm.</b> Hiệu chỉnh được, nhưng mỗi cách đều có giá: muốn tạm giữ trên 90% thì số khách thật bị '
+          'giữ nhầm tăng gần gấp đôi và precision rơi dưới 0,90; đặc trưng kết hợp làm mô hình chính xác hơn với kiểu đã '
+          'biết nhưng bắt kiểu chưa từng học kém đi. Vì vậy nhóm giữ cấu hình hiện tại và dùng tầng xác thực thêm để đưa '
+          f'tỷ lệ can thiệp lên {pct(k["intervene_recall"])}. Hướng cải thiện thật sự là thêm dữ liệu về tài khoản nhận '
+          'tiền và lịch sử từng merchant, rồi học lại khi chuyên viên gắn thêm nhãn.</div>')
+        st.caption("Các con số trong bảng do nhóm chạy thử ngoài ứng dụng ngày 10/11/2026; cách chọn được thử sau khi đã thấy "
+                   "kết quả trên cùng bộ dữ liệu nên có phần lạc quan.")
 
 
 def eval_ready(res):
@@ -1553,8 +1835,8 @@ def eval_overview(res, b):
     types = sorted(cnt, key=lambda t: -A.get(t, 0) / cnt[t])
     c1, c2 = st.columns([1.3, 1], gap="medium")
     with c1, card("ev_types"):
-        title("Kết quả theo nhóm gian lận", "Bắt được = bị chặn (HIGH/CRITICAL) · Can thiệp = bị chặn hoặc phải xác thực "
-              "thêm (MEDIUM) · mục tiêu 0,80 cho từng nhóm")
+        title("Kết quả theo kiểu gian lận", "Tạm giữ = HIGH/CRITICAL · Can thiệp = tạm giữ hoặc xác thực thêm (MEDIUM) · "
+              "mục tiêu recall tạm giữ 0,80 cho từng kiểu")
         rows = []
         for t in types:
             r = A.get(t, 0) / cnt[t]
@@ -1569,10 +1851,10 @@ def eval_overview(res, b):
                     f'<td class="num">{d(b["recall"], 2)}</td><td class="num">{sum(B.get(t, 0) for t in types)}/{sum(cnt.values())}</td>'
                     f'<td class="num"><span class="{"yes" if b["recall"] >= .8 else "no"}">{"✓" if b["recall"] >= .8 else "✗"}</span></td></tr>')
         H('<div class="fs fs-tw"><table class="fs-table"><thead><tr><th>Nhóm gian lận</th><th class="num">Số mẫu</th>'
-          '<th class="num">Bắt được</th><th class="num">Recall</th><th class="num">Can thiệp</th>'
+          '<th class="num">Tạm giữ</th><th class="num">Recall tạm giữ</th><th class="num">Can thiệp</th>'
           '<th class="num">Đạt</th></tr></thead><tbody>' + "".join(rows) + "</tbody></table></div>")
     with c2, card("ev_cm"):
-        title("Ma trận nhầm lẫn", "Dự đoán ở ngưỡng cảnh báo, gộp 5 fold")
+        title("Ma trận nhầm lẫn", "Ở mức tạm giữ, gộp 5 fold · 2.000 giao dịch có nhãn")
         tp, fn, fp = b["tp"], b["fn"], b["fp"]
         tn = len(lv) - int(lv.y.sum()) - fp
         z = [[tp, fn], [fp, tn]]
@@ -1607,7 +1889,7 @@ def eval_tiers(res):
         title("Bộ chỉ số 3 tầng hành động",
               "Ngưỡng chặn và ngưỡng xác thực thêm đều chọn trên phần huấn luyện của từng fold rồi áp lên phần kiểm tra "
               "(ngưỡng lồng) – con số dưới đây là kết quả ngoài mẫu")
-        rows = [{"m": "Recall can thiệp (chặn hoặc xác thực thêm)", "v": f'{pct(k["intervene_recall"])} ({k["intervene_tp"]}/{k["n_fraud"]})',
+        rows = [{"m": "Recall can thiệp (tạm giữ hoặc xác thực thêm)", "v": f'{pct(k["intervene_recall"])} ({k["intervene_tp"]}/{k["n_fraud"]})',
                  "c": f'{k["stepup_legit"]} khách thật ({pct(k["stepup_legit_rate"], 2)}) phải xác thực thêm'},
                 {"m": "· trong đó nhờ lớp ngữ cảnh", "v": f'{k.get("ctx_tp", 0)} ca',
                  "c": f'đổi lại {k.get("ctx_legit", 0)} khách thật bị hỏi thêm vì lệch mạnh so với thói quen'},
@@ -1616,7 +1898,7 @@ def eval_tiers(res):
                       f'{money_short(k["missed_value_top"][0]) if k["missed_value_top"] else "–"}'},
                 {"m": "Recall theo vụ tấn công", "v": f'{pct(k["case_recall"])} ({k["attacks_detected"]}/{k["n_attacks"]} vụ)',
                  "c": "vụ = các giao dịch gian lận của cùng khách cách nhau ≤ 30 phút; tính từ cảnh báo tại thời điểm giao dịch"},
-                {"m": "Recall chặn ngay tại thời điểm giao dịch", "v": f'{pct(k["hard_recall"])} ({k["hard_tp"]}/{k["n_fraud"]})',
+                {"m": "Recall tạm giữ (chặn ngay tại thời điểm giao dịch)", "v": f'{pct(k["hard_recall"])} ({k["hard_tp"]}/{k["n_fraud"]})',
                  "c": f'{k["hard_fp"]} báo nhầm / {n0(k["n_legit"])} giao dịch thật'}]
         if ts:
             rows.append({"m": f"Kiểm tra theo thời gian (học {ts['train_months']}, kiểm tra {ts['test_months']})",
@@ -3195,7 +3477,7 @@ padding:6px 10px;border-radius:10px}
 
 
 # ============================================================================= khung chính
-PAGES = {"overview": page_overview, "tx": page_tx, "cases": page_cases, "live": page_live, "log": page_log,
+PAGES = {"dash": page_dash, "overview": page_overview, "tx": page_tx, "cases": page_cases, "live": page_live, "log": page_log,
          "cust": page_cust, "ev_kpi": page_eval, "ev_tiers": page_ev_tiers, "ev_loto": page_ev_loto,
          "ev_rules": page_ev_rules, "ev_err": page_ev_err, "ev_fair": page_ev_fair, "ev_rt": page_ev_rt,
          "dl": page_dl, "admin": page_admin}
@@ -3222,6 +3504,10 @@ if cur == "data":
 elif RES is None:
     no_data()
 else:
+    if cur in ("live", "ev_loto"):
+        H('<div class="fs fs-note"><b>Phần cải tiến thêm của nhóm</b>, ngoài yêu cầu xử lý bộ dữ liệu BTC: '
+          + ("chấm từng giao dịch mới đến theo thời gian thực từ ứng dụng khách FS Pay." if cur == "live" else
+             "thử khả năng bắt kiểu gian lận chưa từng học bằng cách ẩn từng kiểu khi huấn luyện.") + "</div>")
     PAGES[cur](RES)
 if RES is not None:
     assistant(RES)
