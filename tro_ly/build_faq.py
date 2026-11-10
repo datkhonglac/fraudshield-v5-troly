@@ -144,7 +144,7 @@ Q = [
     ("E03", "Tra cứu & phân tích", "Ngưỡng chặn và ngưỡng xác thực thêm là bao nhiêu?",
      "ngưỡng là bao nhiêu|0,68|0,43|ngưỡng tạm giữ|ngưỡng cảnh báo",
      "Với Data Pack BTC: điểm từ **0,6847** trở lên bị tạm giữ (HIGH/CRITICAL); từ **0,4349** đến dưới đó phải xác thực "
-     "thêm (MEDIUM). Ngưỡng được chọn tự động trong kiểm định chéo, không đặt tay.", "ev_tiers"),
+     "thêm (MEDIUM). Ngưỡng được chọn tự động trong kiểm định chéo, không đặt tay.", "ev_kpi"),
     ("E04", "Tra cứu & phân tích", "Tải danh sách giao dịch ra Excel được không?",
      "xuất excel|tải csv|download giao dịch|tải xuống danh sách",
      "Được. Trang **Tra cứu giao dịch** có nút **Tải xuống** cho danh sách đang lọc. Bộ kết quả đầy đủ (tệp nộp, hồ sơ, "
@@ -164,17 +164,16 @@ Q = [
      "luật r1|luật r6|r7 là gì|c1 là gì|danh sách luật|hệ luật",
      "R1 mạnh/nhẹ: số tiền ≥ 5 lần / 3–5 lần mức nền. R2: thiết bị lạ mới ≤ 30 ngày. R3: IP nước ngoài và tỉnh khác nơi ở. "
      "R4: merchant HIGH kèm tiền ≥ 2× hoặc tỉnh mới. R5: ≥ 2 lần thất bại trong 30 phút. R6: ≥ 2 giao dịch trong 5 phút. "
-     "R7: thiết bị đã dùng cho ≥ 2 khách. C1: thiết bị root/giả lập/rủi ro HIGH. C2: không xác thực.", "ev_rules"),
+     "R7: thiết bị đã dùng cho ≥ 2 khách. C1: thiết bị root/giả lập/rủi ro HIGH. C2: không xác thực.", ""),
     ("F03", "Mô hình & kiểm định", "Các luật dựa trên văn bản pháp lý nào?",
      "căn cứ pháp lý|thông tư 17|tt25|quyết định 2345|nghị định 52",
      "Chủ yếu dựa trên các dấu hiệu giao dịch đáng ngờ của Thông tư 17/2024 (sửa đổi bởi TT 25/2025), Quyết định "
-     "2345/QĐ-NHNN về xác thực sinh trắc học, Nghị định 52/2024 và các thông tư về an toàn thiết bị. Cột Căn cứ ở trang "
-     "Hiệu quả từng luật ghi rõ cho từng luật.", "ev_rules"),
-    ("F04", "Mô hình & kiểm định", "Recall can thiệp và recall chặn ngay khác nhau thế nào?",
-     "recall 93,8|recall 82,8|hai recall|recall can thiệp là gì|recall trên 90",
-     "**Recall chặn ngay** (82,8% – 106/128) đếm gian lận bị tạm giữ ngay. **Recall can thiệp** (93,8% – 120/128) đếm cả "
+     "2345/QĐ-NHNN về xác thực sinh trắc học, Nghị định 52/2024 và các thông tư về an toàn thiết bị.", ""),
+    ("F04", "Mô hình & kiểm định", "Recall can thiệp và recall tạm giữ khác nhau thế nào?",
+     "recall 93,8|recall 82,8|hai recall|recall can thiệp là gì|recall trên 90|recall chặn ngay",
+     "**Recall tạm giữ** (82,8% – 106/128) đếm gian lận bị tạm giữ ngay. **Recall can thiệp** (93,8% – 120/128) đếm cả "
      "gian lận bị tạm giữ lẫn bị bắt xác thực thêm – vì kẻ gian không qua được bước xác thực. Đổi lại 3,74% giao dịch "
-     "thật phải xác thực thêm vài giây.", "ev_tiers"),
+     "thật phải xác thực thêm vài giây.", "ev_kpi"),
     ("F05", "Mô hình & kiểm định", "Mô hình có bắt được kiểu gian lận mới không?",
      "gian lận kiểu mới|kiểu chưa từng thấy|ẩn từng kiểu|loto|novelty",
      "Có kiểm chứng bằng thí nghiệm **ẩn từng kiểu**: bỏ hẳn nhãn của một kiểu khỏi dữ liệu học rồi xem hệ thống còn bắt "
@@ -196,19 +195,19 @@ Q = [
      "gian lận bị lọt|bỏ sót|sao không bắt hết|false negative",
      "Chủ yếu 2 nhóm: giao dịch **đầu tiên** của chuỗi dồn dập (lúc đó chưa có dấu hiệu gì) và **lừa đảo chính chủ** (khách "
      "tự chuyển trên máy và mạng của mình). Nhóm thứ hai cần thêm dữ liệu ngoài giao dịch như người nhận mới, cuộc gọi đang "
-     "diễn ra – đã đưa vào lộ trình. Danh sách cụ thể ở **Lỗi & ngưỡng**.", "ev_err"),
+     "diễn ra – đã đưa vào lộ trình. Danh sách cụ thể ở **Chỉ số chính → Bỏ sót**.", "ev_kpi"),
     ("F10", "Mô hình & kiểm định", "Báo động giả bao nhiêu?",
      "báo nhầm|false positive|chặn nhầm khách thật|precision",
      "Ở mức chặn ngay: **10 báo nhầm trên 1.872 giao dịch thật** (precision 0,914). Thêm khoảng 3,7% giao dịch thật phải "
-     "xác thực thêm (không bị chặn).", "ev_err"),
+     "xác thực thêm (không bị chặn). Danh sách cụ thể ở **Chỉ số chính → Bắt sai**.", "ev_kpi"),
     ("F11", "Mô hình & kiểm định", "Thay đổi ngưỡng thì kết quả thay đổi ra sao?",
      "độ nhạy ngưỡng|kéo ngưỡng|đổi ngưỡng|đường pr",
-     "Vào **Lỗi & ngưỡng → Độ nhạy ngưỡng**, kéo thanh trượt để thấy đánh đổi giữa số gian lận bắt được và số báo nhầm. "
-     "Đây chỉ là để xem – ngưỡng dùng thật vẫn chọn tự động.", "ev_err"),
+     "Xem **Chỉ số chính → Có hiệu chỉnh được không?**: hạ ngưỡng tạm giữ thì bắt được nhiều gian lận hơn nhưng số khách "
+     "thật bị giữ nhầm tăng nhanh (ví dụ tạm giữ 114/128 thì bắt sai 26 giao dịch). Ngưỡng dùng thật vẫn chọn tự động.", "ev_kpi"),
     ("F12", "Mô hình & kiểm định", "Mô hình có thiên vị nhóm khách hay địa phương nào không?",
      "công bằng|thiên vị|fairness|phân khúc khách",
-     "Trang **Công bằng** so tỉ lệ cảnh báo theo phân khúc khách và tỉnh/thành. Mô hình không dùng phân khúc hay nơi ở làm "
-     "đặc trưng trực tiếp; bảng này để theo dõi thiên lệch.", "ev_fair"),
+     "Mô hình không dùng phân khúc khách hay nơi ở làm đặc trưng trực tiếp. Nhóm có theo dõi tỉ lệ cảnh báo theo phân khúc "
+     "và tỉnh/thành để phát hiện thiên lệch.", ""),
     ("F13", "Mô hình & kiểm định", "Kết quả kiểm định được tính thế nào, có đáng tin không?",
      "kiểm định chéo|5 fold|nested cv|cách đánh giá|time split",
      "Kiểm định chéo 5 lần, phân tầng; mô hình, trọng số luật và ngưỡng chỉ học trên phần huấn luyện của từng lần. Thêm "
