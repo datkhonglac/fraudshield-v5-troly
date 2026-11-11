@@ -897,7 +897,7 @@ def page_dash(res):
         lab_top = top.transaction_id.map(labs).fillna("")
         n_fr = int(lab_top.str.startswith("Gian lận").sum())
         n_ok = int((lab_top == "Bình thường").sum())
-        dash_head(4, "Isolation Forest khám phá thêm điều gì",
+        dash_head(4, "Giao dịch có điểm Isolation Forest cao",
                   f"20 giao dịch bất thường nhất theo Isolation Forest <b>nằm ngoài</b> {n0(n_hold)} giao dịch đã bị tạm giữ · "
                   f"{n0(int((top.risk_level == 'MEDIUM').sum()))} đang ở mức xác thực thêm, "
                   f"{n0(int((top.risk_level == 'LOW').sum()))} đang được cho qua")
