@@ -508,6 +508,13 @@ def sample_files():
     return F.collect_dir(SAMPLE_DIR)
 
 
+@st.cache_resource(show_spinner=False)
+def last_run():
+    """Lần chạy gần nhất trên máy chủ – để link ứng dụng khách (?view=khach) và việc tải lại trang (F5) dùng lại
+    đúng bộ dữ liệu vừa tải lên, không phải tải lại."""
+    return {}
+
+
 def store_result(res, files, notes, source, label=None):
     checks = [{"group": "Tệp tải lên", "check": n, "status": "CẢNH BÁO", "detail": ""} for n in notes] + res["checks"]
     ds = hashlib.sha1(files.get("transactions.csv", b"")).hexdigest()[:16]
@@ -518,6 +525,18 @@ def store_result(res, files, notes, source, label=None):
                             "size": sum(len(v) for v in files.values() if isinstance(v, (bytes, bytearray))),
                             "rid": f"{abs(hash((source, time.time()))) % 10**8:08d}"}
     st.session_state.pop("failed", None)
+    last_run().update(res=st.session_state.res, files=files)
+    st.query_params["run"] = ds
+
+
+def restore_last(match_run=True):
+    """Dùng lại lần chạy gần nhất: cho link ứng dụng khách, hoặc khi tải lại trang mà URL còn mã lần chạy (?run=...)."""
+    lr = last_run()
+    r = lr.get("res")
+    if r is None or (match_run and st.query_params.get("run") != r["ds"]):
+        return False
+    st.session_state.res, st.session_state.files = r, lr["files"]
+    return True
 
 
 def start_run(files, notes, source):
@@ -3134,16 +3153,16 @@ def page_data(res):
             title("Chạy mô hình", "Hệ luật (R1–R7) + Hồi quy logistic + Isolation Forest (học trên giai đoạn quá khứ), "
                   "gộp điểm 0,6 – 0,3 – 0,1, lớp ngữ cảnh (lệch so với thói quen của chính khách), xếp 3 tầng hành động "
                   "và gom hồ sơ")
-            if st.button("Chạy mô hình với dữ liệu tải lên" if ups else "Chạy mô hình với Data Pack BTC", type="primary",
-                         icon=":material/play_arrow:", width="stretch", key="btn_run",
-                         disabled=not ups and not (SAMPLE_DIR / "transactions.csv").exists()):
-                if ups:
-                    files, notes = F.collect_files([(u.name, u.getvalue()) for u in ups])
-                    src = ", ".join(u.name for u in ups) if len(ups) <= 2 else f"{len(ups)} tệp CSV tải lên"
-                    start_run(files, notes, src[:160])
-                else:
-                    start_run(sample_files(), [], "Data Pack BTC (có sẵn trong ứng dụng)")
-            st.caption("Thời gian dự kiến: khoảng 10–20 giây cho 8.000 giao dịch. Chưa chọn tệp thì chạy lại Data Pack BTC.")
+            if st.button("Chạy mô hình với dữ liệu tải lên" if ups else "Tải Data Pack lên để chạy mô hình", type="primary",
+                         icon=":material/play_arrow:", width="stretch", key="btn_run", disabled=not ups):
+                files, notes = F.collect_files([(u.name, u.getvalue()) for u in ups])
+                src = ", ".join(u.name for u in ups) if len(ups) <= 2 else f"{len(ups)} tệp CSV tải lên"
+                start_run(files, notes, src[:160])
+            st.caption("Thời gian dự kiến: khoảng 10–20 giây cho 8.000 giao dịch.")
+            if (SAMPLE_DIR / "transactions.csv").exists() and st.button(
+                    "Dự phòng: dùng Data Pack BTC có sẵn trong ứng dụng", icon=":material/backup:", width="stretch",
+                    type="tertiary", key="btn_run_sample"):
+                start_run(sample_files(), [], "Data Pack BTC (có sẵn trong ứng dụng)")
 
     if failed or res is not None:
         with st.expander("Kết quả kiểm tra chi tiết từng hạng mục", icon=":material/fact_check:", expanded=bool(failed)):
@@ -3675,11 +3694,15 @@ _r0 = st.session_state.get("res")
 if _r0 is not None and getattr(_r0.get("model"), "name", CORE_VERSION)[:len(CORE_VERSION)] != CORE_VERSION:
     for _k in ("res", "tried_sample", "parity"):
         st.session_state.pop(_k, None)
-if "res" not in st.session_state and "failed" not in st.session_state and "tried_sample" not in st.session_state:
-    st.session_state.tried_sample = True
-    auto_load_sample()
+# Không tự chạy dữ liệu khi mở app: chỉ chạy sau khi tải Data Pack lên ở mục Dữ liệu.
+if "res" not in st.session_state and "failed" not in st.session_state:
+    restore_last(match_run=st.query_params.get("view") != "khach")
 RES = st.session_state.get("res")
-if st.query_params.get("view") == "khach" and RES is not None:
+if st.query_params.get("view") == "khach":
+    if RES is None:
+        st.info("Ứng dụng khách FS Pay chưa sẵn sàng: chuyên viên cần tải Data Pack BTC lên và chạy mô hình trước.",
+                icon=":material/hourglass_empty:")
+        st.stop()
     page_customer(RES)
     st.stop()
 cur = sidebar(RES)

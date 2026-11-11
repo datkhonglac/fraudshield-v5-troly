@@ -66,7 +66,7 @@ fraud_core.py           lõi mô hình: hồ sơ hành vi + Rule + Logistic Regr
 fs_realtime.py          chấm điểm thời gian thực: bảng trạng thái trong bộ nhớ, Isolation Forest dạng mảng numpy,
                         kiểm tra trùng khớp lô – luồng
 model/pretrained.json   mô hình học sẵn, dùng khi Data Pack tải lên không có nhãn
-data/                   Data Pack BTC (9 tệp CSV) cho nút "Chạy với Data Pack BTC"
+data/                   Data Pack BTC (9 tệp CSV) cho nút dự phòng "Dùng Data Pack BTC có sẵn"
 data_demo/              bộ 1.000 giao dịch mẫu cho app FS Pay (dữ liệu nhóm tự tạo để trình diễn)
 tools/make_demo_set.py  sinh lại bộ giao dịch mẫu
 .streamlit/config.toml  màu sắc, font, giới hạn tải lên 100 MB  ← BẮT BUỘC phải có trên GitHub
@@ -97,6 +97,7 @@ Repo private thì app mặc định cũng private. Trong app bấm **Share** (g�
 - Sửa code trên GitHub → app tự cập nhật sau ít phút.
 - Điền tên đội: sửa dòng `TEAM_NAME = ""` đầu tệp `streamlit_app.py`.
 - Nhật ký quyết định chỉ lưu trong phiên đang mở – tải `audit_log.csv` ở tab **Tải kết quả** trước khi đóng.
+- Mở app chưa có dữ liệu: vào **Dữ liệu & quản trị → Tải & chạy dữ liệu**, tải Data Pack BTC (.zip hoặc 9 tệp .csv) rồi bấm **Chạy mô hình** – lúc đó 8.000 giao dịch mới được chấm. Tải lại trang (F5) vẫn giữ kết quả; link ứng dụng khách FS Pay dùng lần chạy gần nhất.
 - Nếu BTC không cho phép công khai Data Pack, xoá thư mục `data/`: app vẫn chạy, người dùng tự tải tệp .zip lên.
 
 ## Chạy trên máy
