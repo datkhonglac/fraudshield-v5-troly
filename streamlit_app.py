@@ -2287,7 +2287,12 @@ def _push(hub, t, src):
           "tx_status": t["transaction_status"], "score": r["risk_score"], "level": r["risk_level"],
           "reason": r["alert_reason"], "ms": r["latency_ms"], "wall": time.time(), "nov": r["novelty"],
           "status": ST_PENDING[r["risk_level"]], "y": hub["labels"].get(t["transaction_id"]),
-          "recv": datetime.now(VN_TZ)}
+          "recv": datetime.now(VN_TZ),
+          "parts": {"ml_score": r["ml_score"], "rule_score": r["rule_score"], "anomaly_score": r["anomaly_score"],
+                    "ctx_score": r["ctx_score"], "ctx_door": int(r["ctx_door"]), **r.get("flags", {}),
+                    **{k: r.get("features", {}).get(k) for k in ("amt_ratio", "prof_new_device", "prof_new_location",
+                                                                 "prof_new_ip", "prof_new_channel", "n_txn_5m",
+                                                                 "n_fail_30m")}}}
     if src == "Bộ mẫu" and r["risk_level"] == "MEDIUM":
         ev["status"] = "Đã yêu cầu xác thực thêm"
     if t["transaction_status"] != "SUCCESS" and r["risk_level"] in ("LOW", "MEDIUM"):
@@ -3398,10 +3403,19 @@ def _as_lookup(res, q):
             q = f"CASE{int(q[4:]):04d}"
         m = cases[cases.case_id == q]
         return ("case", m.iloc[0]) if len(m) else (None, None)
-    if q.startswith("TXN") and q[3:].isdigit():
+    if q.startswith("LIVE") and q[4:].lstrip("-").isdigit():
+        q = f"LIVE-{int(q[4:].lstrip('-')):04d}"
+    elif q.startswith("TXN") and q[3:].isdigit():
         q = f"TXN{int(q[3:]):06d}"
     m = df[df.transaction_id == q]
-    return ("tx", m.iloc[0]) if len(m) else (None, None)
+    if len(m):
+        return "tx", m.iloc[0]
+    ev = next((x for x in reversed(hub_get(res)["events"]) if str(x["tid"]).upper() == q and "parts" in x), None)
+    if ev is None:
+        return None, None
+    row = {"transaction_id": ev["tid"], "risk_level": ev["level"], "risk_score": ev["score"], "amount": ev["amount"],
+           "alert_reason": ev["reason"], "case_id": None, "priority_rank": None, **ev["parts"]}
+    return "tx", pd.Series(row)
 
 
 def _as_score_html(r, thr, med):
@@ -3455,7 +3469,9 @@ def _as_explain_tx(res, r, head=True):
     ctx_line = (f'<br><b>Lớp ngữ cảnh:</b> lệch {d(r.ctx_score, 1)} / ngưỡng {d(cl["threshold"], 1)}'
                 if "ctx_score" in r.index and cl.get("threshold") is not None else "")
     case = f" · hồ sơ {e(r.case_id)}" if isinstance(r.get("case_id"), str) else ""
-    top = (f'<b>{e(r.transaction_id)}</b> · {badge(r.risk_level)} · hạng #{int(r.priority_rank)}/{n0(len(res["df"]))}'
+    rank = (f' · hạng #{int(r.priority_rank)}/{n0(len(res["df"]))}' if pd.notna(r.get("priority_rank"))
+            else " · giao dịch thời gian thực từ FS Pay")
+    top = (f'<b>{e(r.transaction_id)}</b> · {badge(r.risk_level)}{rank}'
            f' · {money(r.amount)}{case}<br>{LEVEL_PLAIN.get(r.risk_level, "")}.' if head else "")
     H(f'<div class="fs as-b bot" style="max-width:100%">{top}{_as_score_html(r, thr, med)}'
       + (f'<b>Vì sao:</b><ul>{"".join(f"<li>{e(x)}</li>" for x in reasons[:5])}</ul>' if reasons else "")
@@ -3488,7 +3504,8 @@ def as_explain(res):
     ctx = st.session_state.get("as_ctx") or {}
     st.text_input("Mã giao dịch hoặc mã hồ sơ", key="as_q_id", placeholder="VD: TXN006170 hoặc CASE0001",
                   help="Gõ mã giao dịch (hoặc chỉ phần số) hoặc mã hồ sơ, rồi bấm Enter.")
-    top = res["df"].nsmallest(3, "priority_rank").transaction_id.tolist()
+    live = [x["tid"] for x in reversed(hub_get(res)["events"]) if x.get("src") != "Bộ mẫu" and "parts" in x][:1]
+    top = live + res["df"].nsmallest(3 - len(live), "priority_rank").transaction_id.tolist()
     cols = st.columns(len(top))
     for col, t in zip(cols, top):
         col.button(t, key=f"as_sug_{t}", on_click=_as_pick_id, args=(t,), width="stretch")
