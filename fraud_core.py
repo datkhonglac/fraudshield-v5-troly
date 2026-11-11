@@ -569,10 +569,12 @@ def evaluate_tiers(y, s, folds, lab, ctx=None, q=None):
     """Đánh giá 3 tầng hành động bằng ngưỡng lồng (ngưỡng chọn trên phần huấn luyện của từng fold).
     ctx: điểm lớp ngữ cảnh – cửa vào tầng xác thực thêm, ngưỡng chọn trên giao dịch thật của phần huấn luyện."""
     hard = np.zeros(len(y), dtype=bool); interv = np.zeros(len(y), dtype=bool); door = np.zeros(len(y), dtype=bool)
+    thr_row = np.zeros(len(y)); med_row = np.zeros(len(y)); fold_row = np.zeros(len(y), dtype=int)
     meds = []
     for tr, va in folds:
         t_thr = best_thr(y[tr], s[tr]); t_med = med_threshold(y[tr], s[tr], t_thr)
         meds.append(t_med)
+        thr_row[va], med_row[va], fold_row[va] = t_thr, t_med, len(meds)
         hard[va] = s[va] >= t_thr; interv[va] = s[va] >= t_med
         if ctx is not None:
             door[va] = (s[va] < t_med) & (ctx[va] > ctx_door_thr(ctx[tr], y[tr], q))
@@ -594,7 +596,7 @@ def evaluate_tiers(y, s, folds, lab, ctx=None, q=None):
             "hard_by_type": pd.Series(hard[fr]).groupby(ft[fr]).sum().astype(int).to_dict(),
             "ctx_tp": int(door[fr].sum()), "ctx_legit": int(door[lg].sum()), "ctx_legit_rate": float(door[lg].mean()),
             "missed_value_top": sorted([round(float(v)) for v in amt[fr & ~hard]], reverse=True)[:3],
-            "hard": hard, "interv": interv, "door": door}
+            "hard": hard, "interv": interv, "door": door, "thr_row": thr_row, "med_row": med_row, "fold_row": fold_row}
 
 
 def novelty_threshold(an, low, ref_mask, budget=None):
@@ -747,6 +749,7 @@ def run(files, tables=None, progress=lambda msg: None, pretrained_path=PRETRAINE
         ctx_l = ctx_all[idx]
         tiers = evaluate_tiers(y, fused, folds, lab.assign(fraud_type=ft), ctx=ctx_l)
         hard_pred, interv_pred, door_pred = tiers.pop("hard"), tiers.pop("interv"), tiers.pop("door")
+        thr_row, med_row, fold_row = tiers.pop("thr_row"), tiers.pop("med_row"), tiers.pop("fold_row")
         # Bảng đánh đổi: ngân sách cửa ngữ cảnh → bắt thêm bao nhiêu, bao nhiêu khách thật phải xác thực thêm
         trade = []
         for q in CTX_GRID:
@@ -854,7 +857,10 @@ def run(files, tables=None, progress=lambda msg: None, pretrained_path=PRETRAINE
                     "false_positives": labf[(labf.is_fraud == 0) & (labf.pred == 1)][err_cols].round(3).to_dict("records")})
         lab_view = pd.DataFrame({"transaction_id": lab.transaction_id.values, "y": y, "fraud_type": ft,
                                  "score": np.round(fused, 5), "hard": hard_pred, "intervene": interv_pred,
-                                 "ctx_door": door_pred})
+                                 "ctx_door": door_pred,
+                                 # thành phần điểm ngoài mẫu và ngưỡng của đúng fold đã chấm giao dịch (để giải thích từng ca)
+                                 "ml_oof": np.round(ml_B, 5), "rule_oof": np.round(rB, 5), "an_oof": np.round(aB, 5),
+                                 "thr_fold": np.round(thr_row, 4), "med_fold": np.round(med_row, 4), "fold": fold_row})
         model_info = {"source": "Huấn luyện trên nhãn trong Data Pack vừa tải lên"
                                 + (f" + {n_extra} nhãn chuyên viên" if n_extra else ""),
                       "n_labels": int(len(y)), "n_fraud": int(y.sum())}
