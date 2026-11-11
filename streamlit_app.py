@@ -185,6 +185,7 @@ box-shadow:0 1px 2px rgba(15,23,42,.04)}
 .fs-sec{font-size:19px;font-weight:800;color:var(--navy);margin:6px 0 2px}
 /* ---------- KPI ---------- */
 .fs-kgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:0 0 16px}
+.fs-kgrid.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .fs-k{position:relative;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px 14px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
 .fs-k .v{font-size:32px;font-weight:800;color:var(--c);letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
 .fs-k .l{font-size:13px;color:#475467;display:flex;align-items:center;gap:7px;margin-top:6px;font-weight:500}
@@ -1676,12 +1677,11 @@ def page_eval(res):
     k = rep["kpi"]
     H(f'<div class="fs fs-note">Mọi chỉ số ở nhóm Kiểm định đo trên <b>{n0(n_lab)} giao dịch có nhãn của BTC</b> '
       f'({n0(n_fr)} gian lận, {n0(n_lab - n_fr)} bình thường), bằng kiểm định 5-fold: mỗi giao dịch được chấm bởi mô hình '
-      f'chưa từng thấy nhãn của nó. <b>Tạm giữ</b> = HIGH/CRITICAL. <b>Can thiệp</b> = tạm giữ hoặc xác thực thêm (MEDIUM).</div>')
-    kgrid([kcard(d(b["recall"]), "Recall tạm giữ", GREEN, f"{b['tp']}/{n_fr} gian lận bị tạm giữ · {ok(b['recall'], .8)}"),
-           kcard(d(k["intervene_recall"]), "Recall can thiệp", TEAL,
-                 f"{k['intervene_tp']}/{n_fr} gian lận bị tạm giữ hoặc xác thực thêm · {ok(k['intervene_recall'], .9)}"),
-           kcard(d(b["precision"]), "Precision tạm giữ", BLUE, f"{b['fp']} giao dịch thật bị tạm giữ nhầm / {n0(n_lab - n_fr)}"),
-           kcard(d(b["f1"]), "F1-score tạm giữ", PURPLE, f"{ok(b['f1'], .75)} · PR-AUC {d(b['pr_auc'])}")])
+      f'chưa từng thấy nhãn của nó. Recall, Precision, F1 tính ở mức <b>tạm giữ</b> (HIGH/CRITICAL).</div>')
+    H('<div class="fs fs-kgrid k3">' + "".join([
+        kcard(d(b["recall"]), "Recall", GREEN, f"{b['tp']}/{n_fr} gian lận bị tạm giữ · {ok(b['recall'], .8)}"),
+        kcard(d(b["precision"]), "Precision", BLUE, f"{b['fp']} giao dịch thật bị tạm giữ nhầm / {n0(n_lab - n_fr)}"),
+        kcard(d(b["f1"]), "F1-score", PURPLE, f"{ok(b['f1'], .75)} · PR-AUC {d(b['pr_auc'])}")]) + "</div>")
     ET = ["Tổng hợp", "Danh sách giao dịch có nhãn", f"Bắt đúng ({b['tp']})", f"Bỏ sót ({b['fn']})",
           f"Bắt sai ({b['fp']})", "Thử đổi ngưỡng", "Có hiệu chỉnh được không?"]
     tab = subtabs("kpi", ET)
