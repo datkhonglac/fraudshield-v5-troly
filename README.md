@@ -31,9 +31,9 @@ Bấm tên nhóm để mở/đóng danh sách mục con; bấm mục con để c
 
 | Nhóm | Mục con | Thẻ trong trang |
 |---|---|---|
-| **Tra cứu & phân tích** | Dashboard tổng quan · Tra cứu giao dịch · Khách hàng & liên kết | Dashboard (chỉ đếm trên 8.000 giao dịch): 1 Đã phân tích bao nhiêu → 2 Phát hiện bao nhiêu rủi ro → 3 Nguyên nhân → 4 Isolation Forest khám phá thêm (20 giao dịch bất thường nhất ngoài nhóm tạm giữ) → 5 Hàng đợi hồ sơ. Tra cứu mặc định xếp CRITICAL → HIGH → MEDIUM → LOW |
+| **Tra cứu & phân tích** | Dashboard tổng quan · Tra cứu giao dịch · Khách hàng & liên kết | Dashboard (chỉ đếm trên 8.000 giao dịch): 1 Đã phân tích bao nhiêu → 2 Phát hiện bao nhiêu rủi ro → 3 Nguyên nhân → 4 Giao dịch có điểm Isolation Forest cao (20 giao dịch bất thường nhất ngoài nhóm tạm giữ) → 5 Hàng đợi hồ sơ. Tra cứu mặc định xếp CRITICAL → HIGH → MEDIUM → LOW |
 | **Xử lý cảnh báo** | Nhật ký quyết định | – |
-| **Kiểm định** (2.000 giao dịch có nhãn) | Chỉ số chính · Chấm thời gian thực | Chỉ số chính: Tổng hợp · Danh sách giao dịch có nhãn · Bắt đúng · Bỏ sót · Bắt sai · Có hiệu chỉnh được không? |
+| **Kiểm định** (2.000 giao dịch có nhãn) | Chỉ số chính · Chấm thời gian thực | Chỉ số chính: Tổng hợp · Danh sách giao dịch có nhãn · Bắt đúng · Bỏ sót · Bắt sai · Thử đổi ngưỡng · Có hiệu chỉnh được không? |
 | **Giám sát thời gian thực** | Giám sát thời gian thực | Cần xử lý ngay · Biểu đồ điểm · Giao dịch đang đến · Đối chiếu bộ mẫu |
 | **Bắt gian lận mới** | Kiểu gian lận mới | Kết quả · Đánh đổi ngân sách · Cách hoạt động |
 | **Dữ liệu & quản trị** | Tải & chạy dữ liệu · Tải kết quả · Học lại & quản trị | – |
@@ -71,6 +71,7 @@ data_demo/              bộ 1.000 giao dịch mẫu cho app FS Pay (dữ liệu
 tools/make_demo_set.py  sinh lại bộ giao dịch mẫu
 .streamlit/config.toml  màu sắc, font, giới hạn tải lên 100 MB  ← BẮT BUỘC phải có trên GitHub
 requirements.txt        thư viện cần cài
+tests/                  unit test, scenario test, script đánh giá (python -m unittest discover -s tests -v)
 ```
 
 ## Đưa lên mạng (Streamlit Community Cloud, miễn phí)
@@ -103,4 +104,11 @@ Repo private thì app mặc định cũng private. Trong app bấm **Share** (g�
 ```bash
 pip install -r requirements.txt
 streamlit run streamlit_app.py
+```
+
+## Kiểm thử
+
+```bash
+python -m unittest discover -s tests -v     # 20 test, khoảng 15 giây
+python tests/evaluate.py output             # ghi toàn bộ KPI, file nộp, kiểm tra luồng–lô ra thư mục output/
 ```
