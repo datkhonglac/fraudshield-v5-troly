@@ -86,8 +86,7 @@ FRAUD_VN = {"FAILED_THEN_SUCCESS": "Thử sai rồi thành công", "VELOCITY_BUR
 # Menu 6 nhóm, mỗi nhóm có mục con: (mã, nhãn, biểu tượng, tiêu đề trang)
 GROUPS = [
     ("ana", "Tra cứu & phân tích", [
-        ("dash", "Dashboard tổng quan", ":material/space_dashboard:", "Dashboard toàn bộ giao dịch"),
-        ("tx", "Tra cứu giao dịch", ":material/payments:", "Tra cứu giao dịch")]),
+        ("dash", "Dashboard tổng quan", ":material/space_dashboard:", "Dashboard toàn bộ giao dịch")]),
     ("ops", "Xử lý cảnh báo", [
         ("log", "Nhật ký quyết định", ":material/history:", "Nhật ký quyết định và tác vụ")]),
     ("model", "Kiểm định", [
@@ -102,7 +101,7 @@ GROUPS = [
         ("admin", "Học lại & quản trị", ":material/admin_panel_settings:", "Học lại có kiểm soát và quản trị")]),
 ]
 NAV = [it for _, _, items in GROUPS for it in items]
-NAV_ALIAS = {"eval": "ev_kpi", "cases": "dash", "overview": "dash", "cust": "dash", "ev_rt": "live",
+NAV_ALIAS = {"eval": "ev_kpi", "cases": "dash", "overview": "dash", "cust": "dash", "ev_rt": "live", "tx": "dash",
              "ev_tiers": "ev_kpi", "ev_rules": "ev_kpi", "ev_err": "ev_kpi", "ev_fair": "ev_kpi"}  # các trang đã ẩn khỏi menu
 
 st.set_page_config(page_title="Fraud Shield · Digital Payment Risk Console", page_icon="🛡️",
@@ -3382,23 +3381,134 @@ TYPE_TIP = {"Thử sai mật khẩu/OTP": "Gọi xác minh khách qua số đi�
             "Lệch thói quen": "Giao dịch lệch nhiều thói quen cùng lúc – xác minh nhẹ với khách trước khi kết luận."}
 
 
+def _as_pick_id(v):
+    st.session_state.as_q_id = v
+
+
+def _as_lookup(res, q):
+    """Tìm mã giao dịch / mã hồ sơ. Trả về ("tx", dòng) | ("case", hồ sơ) | (None, None)."""
+    q = re.sub(r"\s+", "", str(q or "")).upper()
+    if not q:
+        return None, None
+    df, cases = res["df"], res["cases"]
+    if q.isdigit():
+        q = f"TXN{int(q):06d}"
+    if q.startswith("CASE"):
+        if q[4:].isdigit():
+            q = f"CASE{int(q[4:]):04d}"
+        m = cases[cases.case_id == q]
+        return ("case", m.iloc[0]) if len(m) else (None, None)
+    if q.startswith("TXN") and q[3:].isdigit():
+        q = f"TXN{int(q[3:]):06d}"
+    m = df[df.transaction_id == q]
+    return ("tx", m.iloc[0]) if len(m) else (None, None)
+
+
+def _as_score_html(r, thr, med):
+    """Bảng và thanh chia nhỏ RiskScore của một giao dịch."""
+    w = F.W_FUSION
+    parts = [("Hồi quy logistic", float(r.ml_score), w[0], BLUE), ("Hệ luật", float(r.rule_score), w[1], LEVEL_COLOR["HIGH"]),
+             ("Isolation Forest", float(r.anomaly_score), w[2], PURPLE)]
+    segs = "".join(f'<i style="width:{100 * wt * raw:.2f}%;background:{col}"></i>' for _, raw, wt, col in parts)
+    rows = "".join(f'<tr><td><span class="dot" style="background:{col}"></span>{e(nm)}</td><td>{d(raw, 3)}</td>'
+                   f'<td>× {d(wt, 1)}</td><td><b>{d(raw * wt, 3)}</b></td></tr>' for nm, raw, wt, col in parts)
+    sc = float(r.risk_score)
+    if sc >= thr:
+        verdict = f"≥ ngưỡng chặn {d(thr, 4)} → <b>tạm giữ</b>"
+    elif sc >= med:
+        verdict = f"từ ngưỡng xác thực thêm {d(med, 4)} đến dưới {d(thr, 4)} → <b>xác thực thêm</b>"
+    elif int(r.get("ctx_door", 0)) == 1:
+        verdict = f"dưới {d(med, 4)} nhưng lớp ngữ cảnh thấy lệch mạnh → <b>xác thực thêm</b>"
+    else:
+        verdict = f"dưới ngưỡng xác thực thêm {d(med, 4)} → <b>cho qua</b>"
+    return (f'<div class="as-sc"><div class="as-bar">{segs}<em style="left:{100 * thr:.1f}%" title="Chặn"></em>'
+            f'<em class="m" style="left:{100 * med:.1f}%" title="Xác thực thêm"></em></div>'
+            f'<div class="as-axis"><span>0</span><span>xác thực {d(med, 2)} ┊ chặn {d(thr, 2)}</span><span>1</span></div>'
+            f'<table><tr><th>Thành phần</th><th>Điểm gốc</th><th>Trọng số</th><th>Đóng góp</th></tr>{rows}'
+            f'<tr class="tot"><td>RiskScore</td><td></td><td></td><td>{d(sc, 4)}</td></tr></table>'
+            f'<div class="as-verdict">Điểm {d(sc, 4)} {verdict}</div></div>')
+
+
+def _as_habit(r):
+    out = []
+    if float(r.get("amt_ratio", 0) or 0) >= 2:
+        out.append(f"số tiền gấp {d(r.amt_ratio, 1)} lần mức quen của khách")
+    for k, t in [("prof_new_device", "lần đầu dùng thiết bị này"), ("prof_new_location", "lần đầu giao dịch ở tỉnh này"),
+                 ("prof_new_ip", "lần đầu dùng IP nước này"), ("prof_new_channel", "lần đầu dùng kênh này")]:
+        if int(r.get(k, 0) or 0) == 1:
+            out.append(t)
+    if int(r.get("n_txn_5m", 0) or 0) >= 2:
+        out.append(f"{int(r.n_txn_5m)} giao dịch trong 5 phút gần nhất")
+    if int(r.get("n_fail_30m", 0) or 0) >= 1:
+        out.append(f"{int(r.n_fail_30m)} lần thất bại trong 30 phút gần nhất")
+    return out
+
+
+def _as_explain_tx(res, r, head=True):
+    rep = res["report"]
+    thr, med = rep["threshold"], rep["medium_threshold"]
+    reasons = [x.strip().rstrip(".") for x in str(r.alert_reason).split(";") if x.strip()]
+    rules = [F.RULE_NAMES[k] for k in F.RULE_W if int(r.get(k, 0) or 0) == 1]
+    habit = _as_habit(r)
+    rtype = next((t for k, t in RISK_TYPES if int(r.get(k, 0) or 0) == 1), OTHER_TYPE)
+    cl = rep.get("context_layer") or {}
+    ctx_line = (f'<br><b>Lớp ngữ cảnh:</b> lệch {d(r.ctx_score, 1)} / ngưỡng {d(cl["threshold"], 1)}'
+                if "ctx_score" in r.index and cl.get("threshold") is not None else "")
+    case = f" · hồ sơ {e(r.case_id)}" if isinstance(r.get("case_id"), str) else ""
+    top = (f'<b>{e(r.transaction_id)}</b> · {badge(r.risk_level)} · hạng #{int(r.priority_rank)}/{n0(len(res["df"]))}'
+           f' · {money(r.amount)}{case}<br>{LEVEL_PLAIN.get(r.risk_level, "")}.' if head else "")
+    H(f'<div class="fs as-b bot" style="max-width:100%">{top}{_as_score_html(r, thr, med)}'
+      + (f'<b>Vì sao:</b><ul>{"".join(f"<li>{e(x)}</li>" for x in reasons[:5])}</ul>' if reasons else "")
+      + f'<b>Luật bật:</b> {e(", ".join(rules)) if rules else "không có – điểm đến từ mô hình học máy"}.'
+      + (f'<br><b>Lệch thói quen:</b> {e("; ".join(habit))}.' if habit else "") + ctx_line
+      + (f'<div class="as-tip"><b>Gợi ý xử lý:</b> {e(TYPE_TIP.get(rtype, TYPE_TIP[OTHER_TYPE]))}</div>'
+         if r.risk_level != "LOW" else "")
+      + '<div class="as-src">Tính ngay trong app từ điểm mô hình đã sinh – không gửi dữ liệu ra ngoài.</div></div>')
+
+
+def _as_explain_case(res, c):
+    df = res["df"]
+    ids = c.transaction_ids.split(";")
+    tx = df[df.transaction_id.isin(ids)].sort_values("datetime")
+    w = F.W_FUSION
+    rows = "".join(f'<tr><td>{e(t.transaction_id)}</td><td>{badge(t.risk_level)}</td><td><b>{d(t.risk_score, 3)}</b></td>'
+                   f'<td>{d(w[0] * t.ml_score, 2)}</td><td>{d(w[1] * t.rule_score, 2)}</td><td>{d(w[2] * t.anomaly_score, 2)}</td></tr>'
+                   for t in tx.itertuples())
+    H(f'<div class="fs as-b bot" style="max-width:100%"><b>{e(c.case_id)}</b> · {badge(c.case_level)} · khách '
+      f'{e(c.customer_id)} · {len(tx)} giao dịch · {money(c.total_amount)}<br>{LEVEL_PLAIN.get(c.case_level, "")}.'
+      f'<div class="as-sc"><table class="cs"><tr><th>Giao dịch</th><th>Mức</th><th>Điểm</th><th>LR</th><th>Luật</th>'
+      f'<th>IF</th></tr>{rows}</table><div class="as-src">Điểm = LR + Luật + IF (đã nhân trọng số 0,6 · 0,3 · 0,1).</div></div>'
+      f'<b>Nguyên nhân chính:</b> {e(str(c.top_reason).rstrip(". "))}.</div>')
+    opts = tx.sort_values("risk_score", ascending=False).transaction_id.tolist()
+    pick = st.selectbox("Xem chi tiết điểm của giao dịch", opts, key=f"as_case_tx_{c.case_id}")
+    _as_explain_tx(res, df[df.transaction_id == pick].iloc[0])
+
+
 def as_explain(res):
-    ctx = st.session_state.get("as_ctx")
-    if not ctx:
-        H('<div class="fs as-b bot">Hãy mở một hồ sơ ở <b>Hàng đợi hồ sơ</b> hoặc một giao dịch ở <b>Tra cứu giao dịch</b>, '
-          'rồi quay lại đây – mình sẽ giải thích vì sao nó bị cảnh báo.</div>')
-        st.button("Mở hàng đợi hồ sơ", icon=":material/inbox:", key="as_go_cases", on_click=_as_go, args=("cases",),
-                  width="stretch")
+    ctx = st.session_state.get("as_ctx") or {}
+    st.text_input("Mã giao dịch hoặc mã hồ sơ", key="as_q_id", placeholder="VD: TXN006170 hoặc CASE0001",
+                  help="Gõ mã giao dịch (hoặc chỉ phần số) hoặc mã hồ sơ, rồi bấm Enter.")
+    top = res["df"].nsmallest(3, "priority_rank").transaction_id.tolist()
+    cols = st.columns(len(top))
+    for col, t in zip(cols, top):
+        col.button(t, key=f"as_sug_{t}", on_click=_as_pick_id, args=(t,), width="stretch")
+    q = st.session_state.get("as_q_id") or ctx.get("case", "")
+    if not q or q == "-":
+        H('<div class="fs as-b bot">Gõ một <b>mã giao dịch</b> hoặc <b>mã hồ sơ</b>, bấm một gợi ý ở trên (3 giao dịch ưu '
+          'tiên cao nhất), hoặc mở một hồ sơ ở <b>Hàng đợi hồ sơ</b> rồi quay lại đây. Mình sẽ giải thích vì sao nó bị cảnh '
+          'báo và tách điểm RiskScore thành từng phần.</div>')
         return
-    reasons = [x.strip().rstrip(".") for x in str(ctx["reason"]).split(";") if x.strip()]
-    lis = "".join(f"<li>{e(x)}</li>" for x in reasons[:5])
-    rules = ", ".join(ctx.get("rules", [])) or "không có luật nào bật – cảnh báo đến từ mô hình và lớp ngữ cảnh"
-    tip = TYPE_TIP.get(ctx.get("type", ""), TYPE_TIP["Lệch thói quen"])
-    H(f'<div class="fs as-b user">Giải thích {e(ctx["label"])}</div>'
-      f'<div class="fs as-b bot"><b>{e(ctx["label"])}</b> được xếp <b>{e(ctx["level"])}</b> (điểm {d(ctx["score"], 2)}): '
-      f'{LEVEL_PLAIN.get(ctx["level"], "")}.<br><b>Vì sao:</b><ul>{lis}</ul><b>Luật bật:</b> {e(rules)}.'
-      f'<div class="as-tip"><b>Gợi ý xử lý:</b> {e(tip)}</div>'
-      f'<div class="as-src">Lấy từ lý do mô hình đã sinh ngay trong app – không gửi giao dịch ra ngoài.</div></div>')
+    kind, obj = _as_lookup(res, q)
+    if kind is None:
+        H(f'<div class="fs as-b bot">Không tìm thấy <b>{e(str(q)[:40])}</b> trong {n0(len(res["df"]))} giao dịch đang '
+          'xem. Mã giao dịch có dạng <code>TXN006170</code>, mã hồ sơ có dạng <code>CASE0001</code>.</div>')
+        return
+    H(f'<div class="fs as-b user">Giải thích {"hồ sơ" if kind == "case" else "giao dịch"} '
+      f'{e(obj.case_id if kind == "case" else obj.transaction_id)}</div>')
+    if kind == "case":
+        _as_explain_case(res, obj)
+    else:
+        _as_explain_tx(res, obj)
 
 
 def as_ticket(res):
@@ -3496,7 +3606,7 @@ AS_CSS = """<style>
 .st-key-as_fab button{width:60px!important;height:60px!important;min-height:60px!important;border-radius:50%!important;
 background:#1E56C8!important;color:#fff!important;border:0!important;box-shadow:0 10px 26px rgba(30,86,200,.45)!important}
 .st-key-as_fab button span,.st-key-as_fab button p{color:#fff!important;font-size:28px!important}
-.st-key-as_panel{position:fixed!important;right:26px;bottom:94px;width:410px!important;max-width:calc(100vw - 32px);
+.st-key-as_panel{position:fixed!important;right:26px;bottom:94px;width:450px!important;max-width:calc(100vw - 32px);
 max-height:calc(100vh - 120px);overflow-y:auto;z-index:1000;background:#fff;border:1px solid #D6DEEA;border-radius:18px;
 box-shadow:0 18px 50px rgba(11,37,82,.22);gap:0!important;padding:0!important}
 .st-key-as_body{padding:10px 14px 12px!important;gap:8px!important}
@@ -3513,6 +3623,22 @@ border-radius:999px;padding:3px 10px}
 .as-b code{font-size:12px;background:#E8EEF7;padding:1px 4px;border-radius:4px}
 .as-tip{background:#FFF9DB;border-radius:8px;padding:7px 9px;margin-top:6px;font-size:12.5px}
 .as-src{font-size:11px;color:#5B6577;margin-top:5px}
+.as-sc{margin:8px 0 6px}
+.as-bar{position:relative;height:16px;background:#E9EEF5;border-radius:4px;display:flex;overflow:visible}
+.as-bar i{display:block;height:100%}
+.as-bar i:first-child{border-radius:4px 0 0 4px}
+.as-bar em{position:absolute;top:-4px;bottom:-4px;width:0;border-left:2px dashed #0B1F45}
+.as-bar em.m{border-left:2px dotted #A06A00}
+.as-axis{display:flex;justify-content:space-between;font-size:10.5px;color:#5B6577;margin:3px 0 4px}
+.as-sc table{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+.as-sc th{font-size:11px;color:#5B6577;font-weight:700;text-align:right;padding:3px 4px;border-bottom:1px solid #D6DEEA}
+.as-sc td{text-align:right;padding:3px 4px;border-bottom:1px solid #EEF2F7}
+.as-sc th:first-child,.as-sc td:first-child{text-align:left}
+.as-sc tr.tot td{font-weight:800;border-bottom:0;color:#0B1F45}
+.as-sc .dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.as-sc table.cs td:nth-child(2){text-align:left}
+.as-verdict{font-size:12.5px;margin-top:5px}
+.as-b .fs-badge,.as-b span[class*=badge]{font-size:10.5px}
 .st-key-as_msgs [data-testid="stButton"] button{justify-content:flex-start;text-align:left;font-size:12.5px;min-height:34px;
 padding:6px 10px;border-radius:10px}
 .st-key-as_msgs [data-testid="stButton"] button p{font-size:12.5px;text-align:left}

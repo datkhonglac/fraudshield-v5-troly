@@ -19,7 +19,7 @@ Q = [
      "chọn một hồ sơ rồi đọc thẻ **Tóm tắt & kết luận** và ghi quyết định. Phần đầu Dashboard cho toàn cảnh 8.000 giao dịch.", "cases"),
     ("A03", "Bắt đầu", "Menu bên trái được chia thế nào?",
      "các nhóm trong menu|menu có những gì|cấu trúc menu|tìm chức năng ở đâu",
-     "Menu có 6 nhóm, theo thứ tự: **Tra cứu & phân tích** (Dashboard tổng quan kèm hàng đợi hồ sơ, tra cứu giao dịch), **Xử lý cảnh báo** (nhật ký quyết định), **Kiểm định** (các chỉ số đánh giá mô hình), **Giám sát thời gian thực**, **Bắt gian lận mới** (kiểu gian lận chưa từng học) và **Dữ liệu & quản trị** (tải dữ liệu, tải kết quả, học lại). Bấm tên nhóm để mở/đóng, bấm mục con để mở trang.", ""),
+     "Menu có 6 nhóm, theo thứ tự: **Tra cứu & phân tích** (Dashboard tổng quan kèm hàng đợi hồ sơ), **Xử lý cảnh báo** (nhật ký quyết định), **Kiểm định** (các chỉ số đánh giá mô hình), **Giám sát thời gian thực**, **Bắt gian lận mới** (kiểu gian lận chưa từng học) và **Dữ liệu & quản trị** (tải dữ liệu, tải kết quả, học lại). Bấm tên nhóm để mở/đóng, bấm mục con để mở trang.", ""),
     ("A04", "Bắt đầu", "Các thẻ ngang trong trang là gì?",
      "thẻ là gì|tab trong trang|sao không thấy hết nội dung|chuyển phần trong trang",
      "Trang dài được chia thành thẻ, giống mục lục. Chỉ thẻ đang chọn được hiện để màn hình gọn; bấm tên thẻ khác "
@@ -135,24 +135,24 @@ Q = [
     # ---------------------------------------------------------------- E. Tra cứu & phân tích
     ("E01", "Tra cứu & phân tích", "Tìm một giao dịch cụ thể thế nào?",
      "tìm giao dịch|tra cứu mã giao dịch|tìm theo khách hàng|tìm theo merchant",
-     "Vào **Tra cứu giao dịch**, gõ mã giao dịch, mã khách hoặc merchant vào ô tìm kiếm rồi bấm **Tìm kiếm**. Dùng "
-     "**Bộ lọc nâng cao** để lọc theo từng luật, khoảng tiền, khung giờ, IP… Chọn giao dịch ở ô *Xem chi tiết* để mở chi tiết.", "tx"),
+     "Mở trợ lý, chọn chế độ **Giải thích hồ sơ đang xem**, gõ mã giao dịch (VD: TXN006170, hoặc chỉ số 6170) hay mã hồ sơ "
+     "(VD: CASE0001) rồi bấm Enter. Trợ lý hiện mức, lý do, luật bật và tách điểm RiskScore thành từng phần.", ""),
     ("E02", "Tra cứu & phân tích", "Điểm rủi ro được tính thế nào?",
      "công thức điểm|risk score|cách tính điểm|0,6 0,3 0,1|điểm tạo thành",
-     "Điểm rủi ro = 0,6 × hồi quy logistic + 0,3 × hệ luật + 0,1 × Isolation Forest, nằm trong khoảng 0–1. Thẻ **Điểm & lớp "
-     "ngữ cảnh** trong chi tiết giao dịch vẽ đóng góp của từng phần và các luật đang bật.", "tx"),
+     "Điểm rủi ro = 0,6 × hồi quy logistic + 0,3 × hệ luật + 0,1 × Isolation Forest, nằm trong khoảng 0–1. Trong trợ lý, chế "
+     "độ **Giải thích hồ sơ đang xem**, gõ mã giao dịch để xem bảng điểm gốc × trọng số = đóng góp của từng phần.", ""),
     ("E03", "Tra cứu & phân tích", "Ngưỡng chặn và ngưỡng xác thực thêm là bao nhiêu?",
      "ngưỡng là bao nhiêu|0,68|0,43|ngưỡng tạm giữ|ngưỡng cảnh báo",
      "Với Data Pack BTC: điểm từ **0,6847** trở lên bị tạm giữ (HIGH/CRITICAL); từ **0,4349** đến dưới đó phải xác thực "
      "thêm (MEDIUM). Ngưỡng được chọn tự động trong kiểm định chéo, không đặt tay.", "ev_kpi"),
     ("E04", "Tra cứu & phân tích", "Tải danh sách giao dịch ra Excel được không?",
      "xuất excel|tải csv|download giao dịch|tải xuống danh sách",
-     "Được. Trang **Tra cứu giao dịch** có nút **Tải xuống** cho danh sách đang lọc. Bộ kết quả đầy đủ (tệp nộp, hồ sơ, "
-     "chi tiết điểm) ở **Dữ liệu & quản trị → Tải kết quả**.", "tx"),
+     "Được. Vào **Dữ liệu & quản trị → Tải kết quả**: có tệp nộp, danh sách hồ sơ và tệp chi tiết điểm của toàn bộ "
+     "8.000 giao dịch (scored_transactions_detail.csv).", "dl"),
     ("E05", "Tra cứu & phân tích", "Xem toàn bộ thói quen và liên kết của một khách ở đâu?",
      "xem một khách hàng|tra cứu khách hàng|lịch sử khách|liên kết của khách",
      "Mở **Dashboard tổng quan**, mục 5 **Hàng đợi hồ sơ**, bấm vào hồ sơ của khách đó: tab **Thói quen khách** và "
-     "**Liên kết thiết bị** cho thấy thói quen và các thiết bị, khách dùng chung. Muốn xem từng giao dịch thì dùng **Tra cứu giao dịch** và gõ mã khách vào ô tìm.", "dash"),
+     "**Liên kết thiết bị** cho thấy thói quen và các thiết bị, khách dùng chung. Muốn xem điểm từng giao dịch thì hỏi trợ lý ở chế độ **Giải thích hồ sơ đang xem**.", "dash"),
 
     # ---------------------------------------------------------------- F. Mô hình & kiểm định
     ("F01", "Mô hình & kiểm định", "Mô hình gồm những lớp nào?",
