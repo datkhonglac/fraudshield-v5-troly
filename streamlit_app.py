@@ -1685,11 +1685,13 @@ def page_eval(res):
            kcard(d(b["precision"]), "Precision tạm giữ", BLUE, f"{b['fp']} giao dịch thật bị tạm giữ nhầm / {n0(n_lab - n_fr)}"),
            kcard(d(b["f1"]), "F1-score tạm giữ", PURPLE, f"{ok(b['f1'], .75)} · PR-AUC {d(b['pr_auc'])}")])
     ET = ["Tổng hợp", "Danh sách giao dịch có nhãn", f"Bắt đúng ({b['tp']})", f"Bỏ sót ({b['fn']})",
-          f"Bắt sai ({b['fp']})", "Có hiệu chỉnh được không?"]
+          f"Bắt sai ({b['fp']})", "Thử đổi ngưỡng", "Có hiệu chỉnh được không?"]
     tab = subtabs("kpi", ET)
     if tab == ET[0]:
         eval_overview(res, b)
     elif tab == ET[5]:
+        eval_threshold(res)
+    elif tab == ET[6]:
         eval_tuning(res)
     else:
         eval_lists(res, ET.index(tab))
