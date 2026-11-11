@@ -219,6 +219,11 @@ padding:2px 9px;border-radius:999px}
 .fs-table tr.hl td{font-weight:700;background:#F3F7FF}
 .fs-table tr.bad td{background:#FFF5F5}
 .fs-table .best{color:var(--blue);font-weight:700}
+[class*="st-key-card_db4"] .fs-tw{max-height:620px;overflow:auto}
+[class*="st-key-card_db4"] .fs-table th{position:sticky;top:0;z-index:1}
+.if-chip{display:inline-block;font-size:11.5px;background:#FFF4E6;color:#B4540A;border:1px solid #FFD8A8;border-radius:20px;
+padding:1px 8px;margin:2px 3px 2px 0;white-space:nowrap}
+.if-sub{font-size:11px;color:#98A2B3}
 .fs-table th,.fs-table th.num{white-space:normal;vertical-align:bottom;line-height:1.35}
 .fs-table td:first-child{min-width:150px}
 .fs-table .new{color:var(--high);font-weight:700}
@@ -919,35 +924,43 @@ def page_dash(res):
                 st.caption(f"Ngoài ra {n0(n_door)} giao dịch điểm thấp bị chuyển sang xác thực thêm vì lớp ngữ cảnh thấy lệch "
                            "mạnh so với thói quen của chính khách hàng.")
 
-    # 4 · Isolation Forest khám phá thêm
+    # 4 · Isolation Forest khám phá thêm – liệt kê TẤT CẢ giao dịch điểm IF cao chưa bị tạm giữ, có nhãn BTC xếp trên
     with card("db4"):
         rest = df[df.predicted_fraud == 0]
-        top = rest.nlargest(20, "anomaly_score")
+        if_thr = float(rep.get("novelty_threshold", df.anomaly_score.quantile(0.95)))
+        top = rest[rest.anomaly_score >= if_thr].copy()
         labs = label_map(res)
-        lab_top = top.transaction_id.map(labs).fillna("")
-        n_fr = int(lab_top.str.startswith("Gian lận").sum())
-        n_ok = int((lab_top == "Bình thường").sum())
+        top["lab"] = top.transaction_id.map(labs).fillna("")
+        top["lab_ord"] = np.where(top.lab.str.startswith("Gian lận"), 0, np.where(top.lab == "Bình thường", 1, 2))
+        top = top.sort_values(["lab_ord", "anomaly_score", "risk_score"], ascending=[True, False, False])
+        n_fr = int((top.lab_ord == 0).sum())
+        n_ok = int((top.lab_ord == 1).sum())
         dash_head(4, "Giao dịch có điểm Isolation Forest cao",
-                  f"20 giao dịch bất thường nhất theo Isolation Forest <b>nằm ngoài</b> {n0(n_hold)} giao dịch đã bị tạm giữ · "
-                  f"{n0(int((top.risk_level == 'MEDIUM').sum()))} đang ở mức xác thực thêm, "
-                  f"{n0(int((top.risk_level == 'LOW').sum()))} đang được cho qua")
+                  f"Tất cả {n0(len(top))} giao dịch có điểm Isolation Forest ≥ {d(if_thr, 3)} <b>nằm ngoài</b> {n0(n_hold)} "
+                  f"giao dịch đã bị tạm giữ · {n0(int((top.risk_level == 'MEDIUM').sum()))} đang ở mức xác thực thêm, "
+                  f"{n0(int((top.risk_level == 'LOW').sum()))} đang được cho qua · giao dịch có nhãn BTC xếp lên trên")
         rows = []
         for i, r in enumerate(top.itertuples(), 1):
-            lb = labs.get(r.transaction_id, "")
+            lb = r.lab
             lbh = (f'<span style="color:#C92A2A;font-weight:600">{e(lb)}</span>' if lb.startswith("Gian lận")
                    else e(lb) if lb else '<span style="color:#98A2B3">chưa có nhãn</span>')
             rows.append({"i": i, "id": f'<span class="mono">{e(r.transaction_id)}</span>', "t": f"{r.datetime:%d/%m %H:%M}",
-                         "c": e(r.customer_id), "a": n0(r.amount), "x": f"{r.amt_ratio:.1f}×".replace(".", ","),
+                         "c": f'{e(r.customer_id)}<div class="if-sub">{int(r.cust_n_txn)} gd trước đó</div>',
+                         "a": n0(r.amount), "x": f"{r.amt_ratio:.1f}×".replace(".", ","),
                          "lv": badge(r.risk_level), "s": d(r.risk_score, 3), "an": d(r.anomaly_score, 3),
+                         "sg": "".join(f'<span class="if-chip">{e(t)}</span>' for t in if_signals(r)),
                          "q": "Có" if getattr(r, "novelty", 0) else "", "lb": lbh})
         table(rows, [("i", "#"), ("id", "Mã giao dịch"), ("t", "Thời gian"), ("c", "Khách"), ("a", "Số tiền (₫)"),
                      ("x", "Gấp mức nền"), ("lv", "Mức hiện tại"), ("s", "Điểm rủi ro"), ("an", "Điểm bất thường"),
-                     ("q", "Hàng đợi mẫu mới"), ("lb", "Nhãn BTC")],
-              num_cols=("i", "a", "x", "s", "an"), raw_cols=("id", "lv", "lb"))
-        st.caption(f"Trong 20 giao dịch này: {n_fr} có nhãn gian lận, {n_ok} có nhãn bình thường, {20 - n_fr - n_ok} chưa có nhãn. "
-                   f"Isolation Forest không dùng nhãn nên chỉ ra những giao dịch \"lạ\" mà luật và hồi quy logistic chưa coi là "
-                   f"rủi ro cao. Hệ thống đưa {n0(int(rep.get('n_novelty', 0)))} giao dịch loại này vào hàng đợi "
-                   "\"Nghi vấn mẫu mới\" để chuyên viên rà và gắn nhãn, phục vụ học lại.")
+                     ("sg", "Lạ ở điểm nào"), ("q", "Hàng đợi mẫu mới"), ("lb", "Nhãn BTC")],
+              num_cols=("i", "a", "x", "s", "an"), raw_cols=("id", "c", "lv", "sg", "lb"))
+        n_new = int((top.cust_n_txn < 5).sum())
+        st.caption(f"Trong {n0(len(top))} giao dịch này: {n_fr} có nhãn gian lận, {n_ok} có nhãn bình thường, "
+                   f"{n0(len(top) - n_fr - n_ok)} chưa có nhãn (nhãn BTC chỉ có ở 2.000 giao dịch). {n0(n_new)} giao dịch là của "
+                   f"khách có dưới 5 giao dịch trước đó – chưa đủ lịch sử nên dễ bị coi là \"lạ\". Isolation Forest không dùng nhãn "
+                   f"nên chỉ ra những giao dịch khác thường mà luật và hồi quy logistic chưa coi là rủi ro cao. Hệ thống đưa "
+                   f"{n0(int(rep.get('n_novelty', 0)))} giao dịch đang được cho qua vào hàng đợi \"Nghi vấn mẫu mới\" để chuyên viên "
+                   "rà và gắn nhãn, phục vụ học lại.")
 
     # 5 · hàng đợi hồ sơ
     with card("db5"):
@@ -955,6 +968,25 @@ def page_dash(res):
                   f"{n0(n_hold)} giao dịch bị tạm giữ của cùng khách, cách nhau ≤ 30 phút được gom thành "
                   f"{n0(len(res['cases']))} hồ sơ · xếp theo điểm từ cao xuống thấp")
     page_cases(res)
+
+
+IF_SIGNALS = [("Máy lạ với khách", lambda r: r.prof_new_device == 1), ("Nơi lạ với khách", lambda r: r.prof_new_location == 1),
+              ("IP lạ", lambda r: r.prof_new_ip == 1), ("Kênh thanh toán lạ", lambda r: r.prof_new_channel == 1),
+              ("Lỗi / bị từ chối", lambda r: r.transaction_status != "SUCCESS"), ("Ngoài nơi ở", lambda r: r.loc_mismatch == 1),
+              ("Merchant rủi ro cao", lambda r: r.merchant_high == 1), ("Không xác thực", lambda r: r.auth_none == 1),
+              ("Số tiền", lambda r: r.amt_ratio >= 2), ("Giờ khuya 0–5h", lambda r: r.datetime.hour < 5)]
+
+
+def if_signals(r):
+    """Các dấu hiệu khác thường dễ đọc của một giao dịch (để giải thích vì sao Isolation Forest thấy lạ)."""
+    out = []
+    for name, f in IF_SIGNALS:
+        try:
+            if f(r):
+                out.append(f"Gấp {r.amt_ratio:.1f}× mức nền".replace(".", ",") if name == "Số tiền" else name)
+        except Exception:  # noqa – thiếu cột thì bỏ qua dấu hiệu đó
+            pass
+    return out
 
 
 def page_overview(res):
