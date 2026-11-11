@@ -15,11 +15,11 @@ Q = [
      "xử lý, và giám sát giao dịch mới theo thời gian thực từ ứng dụng khách FS Pay.", ""),
     ("A02", "Bắt đầu", "Tôi nên bắt đầu từ đâu?",
      "mới vào thì làm gì|hướng dẫn nhanh|bắt đầu sử dụng|lần đầu dùng",
-     "Mở **Dashboard tổng quan** (nhóm Tra cứu & phân tích), kéo xuống mục 5 **Hàng đợi hồ sơ**, bấm chip **Khẩn cấp chưa xử lý** để thấy hồ sơ cần làm trước, "
+     "Mở **Tổng quan** (mục Tổng quan), kéo xuống mục 5 **Hàng đợi hồ sơ**, bấm chip **Khẩn cấp chưa xử lý** để thấy hồ sơ cần làm trước, "
      "chọn một hồ sơ rồi đọc thẻ **Tóm tắt & kết luận** và ghi quyết định. Phần đầu Dashboard cho toàn cảnh 8.000 giao dịch.", "cases"),
     ("A03", "Bắt đầu", "Menu bên trái được chia thế nào?",
      "các nhóm trong menu|menu có những gì|cấu trúc menu|tìm chức năng ở đâu",
-     "Menu có 6 nhóm, theo thứ tự: **Tra cứu & phân tích** (Dashboard tổng quan kèm hàng đợi hồ sơ), **Xử lý cảnh báo** (nhật ký quyết định), **Kiểm định** (các chỉ số đánh giá mô hình), **Giám sát thời gian thực**, **Bắt gian lận mới** (kiểu gian lận chưa từng học) và **Dữ liệu & quản trị** (tải dữ liệu, tải kết quả, học lại). Bấm tên nhóm để mở/đóng, bấm mục con để mở trang.", ""),
+     "Menu có 6 mục, theo thứ tự: **Tổng quan** (dashboard kèm hàng đợi hồ sơ), **Nhật ký xử lý** (các quyết định đã ghi), **Kiểm định** (các chỉ số đánh giá mô hình), **Giám sát thời gian thực**, **Bắt gian lận mới** (kiểu gian lận chưa từng học) và **Dữ liệu & quản trị** (tải dữ liệu, tải kết quả, học lại). Bấm một mục để mở trang; riêng Dữ liệu & quản trị bấm để mở/đóng các mục con.", ""),
     ("A04", "Bắt đầu", "Các thẻ ngang trong trang là gì?",
      "thẻ là gì|tab trong trang|sao không thấy hết nội dung|chuyển phần trong trang",
      "Trang dài được chia thành thẻ, giống mục lục. Chỉ thẻ đang chọn được hiện để màn hình gọn; bấm tên thẻ khác "
@@ -132,26 +132,26 @@ Q = [
      "Trên FS Pay, mục **Bộ 1.000 giao dịch mẫu**: chọn 1, 3 hoặc 10 giao dịch/giây (10 GD/giây chạy hết trong khoảng "
      "2 phút), bấm **Tạm dừng** để dừng. Có thể vừa phát vừa gửi giao dịch tay.", ""),
 
-    # ---------------------------------------------------------------- E. Tra cứu & phân tích
-    ("E01", "Tra cứu & phân tích", "Tìm một giao dịch cụ thể thế nào?",
+    # ---------------------------------------------------------------- E. Tổng quan
+    ("E01", "Tổng quan", "Tìm một giao dịch cụ thể thế nào?",
      "tìm giao dịch|tra cứu mã giao dịch|tìm theo khách hàng|tìm theo merchant",
      "Mở trợ lý, chọn chế độ **Giải thích hồ sơ đang xem**, gõ mã giao dịch (VD: TXN006170, hoặc chỉ số 6170) hay mã hồ sơ "
      "(VD: CASE0001) rồi bấm Enter. Trợ lý hiện mức, lý do, luật bật và tách điểm RiskScore thành từng phần.", ""),
-    ("E02", "Tra cứu & phân tích", "Điểm rủi ro được tính thế nào?",
+    ("E02", "Tổng quan", "Điểm rủi ro được tính thế nào?",
      "công thức điểm|risk score|cách tính điểm|0,6 0,3 0,1|điểm tạo thành",
      "Điểm rủi ro = 0,6 × hồi quy logistic + 0,3 × hệ luật + 0,1 × Isolation Forest, nằm trong khoảng 0–1. Trong trợ lý, chế "
      "độ **Giải thích hồ sơ đang xem**, gõ mã giao dịch để xem bảng điểm gốc × trọng số = đóng góp của từng phần.", ""),
-    ("E03", "Tra cứu & phân tích", "Ngưỡng chặn và ngưỡng xác thực thêm là bao nhiêu?",
+    ("E03", "Tổng quan", "Ngưỡng chặn và ngưỡng xác thực thêm là bao nhiêu?",
      "ngưỡng là bao nhiêu|0,68|0,43|ngưỡng tạm giữ|ngưỡng cảnh báo",
      "Với Data Pack BTC: điểm từ **0,6847** trở lên bị tạm giữ (HIGH/CRITICAL); từ **0,4349** đến dưới đó phải xác thực "
      "thêm (MEDIUM). Ngưỡng được chọn tự động trong kiểm định chéo, không đặt tay.", "ev_kpi"),
-    ("E04", "Tra cứu & phân tích", "Tải danh sách giao dịch ra Excel được không?",
+    ("E04", "Tổng quan", "Tải danh sách giao dịch ra Excel được không?",
      "xuất excel|tải csv|download giao dịch|tải xuống danh sách",
      "Được. Vào **Dữ liệu & quản trị → Tải kết quả**: có tệp nộp, danh sách hồ sơ và tệp chi tiết điểm của toàn bộ "
      "8.000 giao dịch (scored_transactions_detail.csv).", "dl"),
-    ("E05", "Tra cứu & phân tích", "Xem toàn bộ thói quen và liên kết của một khách ở đâu?",
+    ("E05", "Tổng quan", "Xem toàn bộ thói quen và liên kết của một khách ở đâu?",
      "xem một khách hàng|tra cứu khách hàng|lịch sử khách|liên kết của khách",
-     "Mở **Dashboard tổng quan**, mục 5 **Hàng đợi hồ sơ**, bấm vào hồ sơ của khách đó: tab **Thói quen khách** và "
+     "Mở **Tổng quan**, mục 5 **Hàng đợi hồ sơ**, bấm vào hồ sơ của khách đó: tab **Thói quen khách** và "
      "**Liên kết thiết bị** cho thấy thói quen và các thiết bị, khách dùng chung. Muốn xem điểm từng giao dịch thì hỏi trợ lý ở chế độ **Giải thích hồ sơ đang xem**.", "dash"),
 
     # ---------------------------------------------------------------- F. Mô hình & kiểm định
@@ -195,14 +195,14 @@ Q = [
      "gian lận bị lọt|bỏ sót|sao không bắt hết|false negative",
      "Chủ yếu 2 nhóm: giao dịch **đầu tiên** của chuỗi dồn dập (lúc đó chưa có dấu hiệu gì) và **lừa đảo chính chủ** (khách "
      "tự chuyển trên máy và mạng của mình). Nhóm thứ hai cần thêm dữ liệu ngoài giao dịch như người nhận mới, cuộc gọi đang "
-     "diễn ra – đã đưa vào lộ trình. Danh sách cụ thể ở **Chỉ số chính → Bỏ sót**.", "ev_kpi"),
+     "diễn ra – đã đưa vào lộ trình. Danh sách cụ thể ở **Kiểm định → Bỏ sót**.", "ev_kpi"),
     ("F10", "Mô hình & kiểm định", "Báo động giả bao nhiêu?",
      "báo nhầm|false positive|chặn nhầm khách thật|precision",
      "Ở mức chặn ngay: **10 báo nhầm trên 1.872 giao dịch thật** (precision 0,914). Thêm khoảng 3,7% giao dịch thật phải "
-     "xác thực thêm (không bị chặn). Danh sách cụ thể ở **Chỉ số chính → Bắt sai**.", "ev_kpi"),
+     "xác thực thêm (không bị chặn). Danh sách cụ thể ở **Kiểm định → Bắt sai**.", "ev_kpi"),
     ("F11", "Mô hình & kiểm định", "Thay đổi ngưỡng thì kết quả thay đổi ra sao?",
      "độ nhạy ngưỡng|kéo ngưỡng|đổi ngưỡng|đường pr",
-     "Xem **Chỉ số chính → Có hiệu chỉnh được không?**: hạ ngưỡng tạm giữ thì bắt được nhiều gian lận hơn nhưng số khách "
+     "Xem **Kiểm định → Có hiệu chỉnh được không?**: hạ ngưỡng tạm giữ thì bắt được nhiều gian lận hơn nhưng số khách "
      "thật bị giữ nhầm tăng nhanh (ví dụ tạm giữ 114/128 thì bắt sai 26 giao dịch). Ngưỡng dùng thật vẫn chọn tự động.", "ev_kpi"),
     ("F12", "Mô hình & kiểm định", "Mô hình có thiên vị nhóm khách hay địa phương nào không?",
      "công bằng|thiên vị|fairness|phân khúc khách",

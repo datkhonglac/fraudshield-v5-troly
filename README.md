@@ -27,15 +27,15 @@ Kết quả trên Data Pack BTC (kiểm định 5-fold, ngưỡng lồng – s�
 
 ## Ứng dụng có gì – menu 6 nhóm
 
-Bấm tên nhóm để mở/đóng danh sách mục con; bấm mục con để chỉ hiện đúng phần đó; trang dài chia thành thẻ.
+Menu gồm 6 mục; bấm một mục để mở trang (riêng Dữ liệu & quản trị có mục con, bấm để mở/đóng); trang dài chia thành thẻ.
 
-| Nhóm | Mục con | Thẻ trong trang |
+| Mục menu | Mục con | Thẻ trong trang |
 |---|---|---|
-| **Tra cứu & phân tích** | Dashboard tổng quan | Dashboard (chỉ đếm trên 8.000 giao dịch): 1 Đã phân tích bao nhiêu → 2 Phát hiện bao nhiêu rủi ro → 3 Nguyên nhân → 4 Giao dịch có điểm Isolation Forest cao (20 giao dịch bất thường nhất ngoài nhóm tạm giữ) → 5 Hàng đợi hồ sơ. Tra cứu mặc định xếp CRITICAL → HIGH → MEDIUM → LOW |
-| **Xử lý cảnh báo** | Nhật ký quyết định | – |
-| **Kiểm định** (2.000 giao dịch có nhãn) | Chỉ số chính | Chỉ số chính: Tổng hợp · Danh sách giao dịch có nhãn · Bắt đúng · Bỏ sót · Bắt sai · Thử đổi ngưỡng · Có hiệu chỉnh được không? |
-| **Giám sát thời gian thực** | Giám sát thời gian thực | Cần xử lý ngay · Biểu đồ điểm · Giao dịch đang đến · Đối chiếu bộ mẫu |
-| **Bắt gian lận mới** | Kiểu gian lận mới | Kết quả · Đánh đổi ngân sách · Cách hoạt động |
+| **Tổng quan** | – | Dashboard (chỉ đếm trên 8.000 giao dịch): 1 Đã phân tích bao nhiêu → 2 Phát hiện bao nhiêu rủi ro → 3 Nguyên nhân → 4 Giao dịch có điểm Isolation Forest cao (20 giao dịch bất thường nhất ngoài nhóm tạm giữ) → 5 Hàng đợi hồ sơ. Tra cứu mặc định xếp CRITICAL → HIGH → MEDIUM → LOW |
+| **Nhật ký xử lý** | – | – |
+| **Kiểm định** (2.000 giao dịch có nhãn) | – | Tổng hợp · Danh sách giao dịch có nhãn · Bắt đúng · Bỏ sót · Bắt sai · Thử đổi ngưỡng · Có hiệu chỉnh được không? |
+| **Giám sát thời gian thực** | – | Cần xử lý ngay · Biểu đồ điểm · Giao dịch đang đến · Đối chiếu bộ mẫu |
+| **Bắt gian lận mới** | – | Kết quả · Đánh đổi ngân sách · Cách hoạt động |
 | **Dữ liệu & quản trị** | Tải & chạy dữ liệu · Tải kết quả · Học lại & quản trị | – |
 
 Ứng dụng khách mô phỏng **FS Pay** là trang riêng: thêm `?view=khach` vào cuối link (có nút ở cuối menu và ở trang

@@ -7,8 +7,8 @@ Triển khai:      Streamlit Community Cloud – chọn tệp chính là streaml
 Lõi mô hình:     fraud_core.py (giống hệt pipeline trong hồ sơ dự thi)
 
 Phiên bản v4 (giao diện) · lõi mô hình v3.2 (lớp bất thường theo ngữ cảnh).
-Menu trái chia 6 nhóm – Tra cứu & phân tích · Xử lý cảnh báo · Kiểm định · Giám sát thời gian thực · Bắt gian lận
-mới · Dữ liệu & quản trị – mỗi nhóm có các mục con; trang dài chia thành thẻ, chỉ hiện thẻ đang chọn. Chấm điểm thời gian thực: fs_realtime.py (trùng 100% với chấm theo lô).
+Menu trái gồm 6 mục – Tổng quan · Nhật ký xử lý · Kiểm định · Giám sát thời gian thực · Bắt gian lận mới ·
+Dữ liệu & quản trị (chỉ nhóm này có mục con); trang dài chia thành thẻ, chỉ hiện thẻ đang chọn. Chấm điểm thời gian thực: fs_realtime.py (trùng 100% với chấm theo lô).
 """
 import hashlib
 import html
@@ -85,16 +85,16 @@ FRAUD_VN = {"FAILED_THEN_SUCCESS": "Thử sai rồi thành công", "VELOCITY_BUR
             "LOCATION_ANOMALY": "Nơi lạ, IP nước ngoài", "HIGH_RISK_MERCHANT": "Merchant rủi ro cao"}
 # Menu 6 nhóm, mỗi nhóm có mục con: (mã, nhãn, biểu tượng, tiêu đề trang)
 GROUPS = [
-    ("ana", "Tra cứu & phân tích", [
-        ("dash", "Dashboard tổng quan", ":material/space_dashboard:", "Dashboard toàn bộ giao dịch")]),
-    ("ops", "Xử lý cảnh báo", [
-        ("log", "Nhật ký quyết định", ":material/history:", "Nhật ký quyết định và tác vụ")]),
+    ("ana", "Tổng quan", [
+        ("dash", "Tổng quan", ":material/space_dashboard:", "Dashboard toàn bộ giao dịch")]),
+    ("ops", "Nhật ký xử lý", [
+        ("log", "Nhật ký xử lý", ":material/history:", "Nhật ký quyết định và tác vụ")]),
     ("model", "Kiểm định", [
-        ("ev_kpi", "Chỉ số chính", ":material/verified_user:", "Chỉ số kiểm định chính")]),
+        ("ev_kpi", "Kiểm định", ":material/verified_user:", "Chỉ số kiểm định chính")]),
     ("rt", "Giám sát thời gian thực", [
         ("live", "Giám sát thời gian thực", ":material/bolt:", "Giám sát giao dịch theo thời gian thực")]),
     ("novel", "Bắt gian lận mới", [
-        ("ev_loto", "Kiểu gian lận mới", ":material/new_releases:", "Khả năng bắt kiểu gian lận mới")]),
+        ("ev_loto", "Bắt gian lận mới", ":material/new_releases:", "Khả năng bắt kiểu gian lận mới")]),
     ("data", "Dữ liệu & quản trị", [
         ("data", "Tải & chạy dữ liệu", ":material/upload_file:", "Tải Data Pack, kiểm tra và chạy mô hình"),
         ("dl", "Tải kết quả", ":material/download:", "Tải kết quả"),
@@ -145,6 +145,10 @@ section[data-testid="stSidebar"] [class*="st-key-grp_"] button{min-height:42px;p
 section[data-testid="stSidebar"] [class*="st-key-grp_"] button p{font-size:12.5px;font-weight:800;letter-spacing:.06em;
 text-transform:uppercase;color:#FFFFFF!important}
 section[data-testid="stSidebar"] [class*="st-key-grp_"] button span{color:#8EA3C4!important}
+section[data-testid="stSidebar"] [class*="st-key-navtop_"] button{min-height:44px;padding:8px 10px!important;margin-top:6px}
+section[data-testid="stSidebar"] [class*="st-key-navtop_"] button p{font-size:12.5px;font-weight:800!important;letter-spacing:.06em;
+text-transform:uppercase;color:#FFFFFF!important}
+section[data-testid="stSidebar"] [class*="st-key-navtop_"] button[data-testid="stBaseButton-secondary"] span{color:#8EA3C4!important}
 section[data-testid="stSidebar"] [class*="st-key-navg_"]{margin-left:18px;padding-left:10px;border-left:1px solid rgba(255,255,255,.14);
 gap:2px!important}
 section[data-testid="stSidebar"] [class*="st-key-navg_"] .stButton button{min-height:40px;padding:8px 12px!important}
@@ -739,6 +743,15 @@ def sidebar(res):
         H(f'<div class="fs fs-brand">{SHIELD.format(w=44)}<div><div class="nm">Fraud Shield</div>'
           f'<div class="sb">Digital Payment Risk Console</div></div></div>')
         for g, name, items in GROUPS:
+            if len(items) == 1:                          # nhóm chỉ có 1 trang: hiện thành 1 mục, bấm là mở trang
+                k, _, ic, _ = items[0]
+                badge_n = ""
+                if k == "dash" and res is not None and st.session_state.get("n_open_cases"):
+                    badge_n = f" · {n0(st.session_state.get('n_open_cases', 0))}"
+                with st.container(key=f"navtop_{g}"):
+                    st.button(name + badge_n, icon=ic, key=f"nav_{k}", type="primary" if k == cur else "secondary",
+                              width="stretch", on_click=_go, args=(k,))
+                continue
             is_open = op.get(g, False)
             st.button(name, icon=":material/expand_more:" if is_open else ":material/chevron_right:", key=f"grp_{g}",
                       width="stretch", on_click=_toggle_group, args=(g,))
@@ -750,7 +763,7 @@ def sidebar(res):
                             badge_n = f" · {n0(st.session_state.get('n_open_cases', 0))}" if st.session_state.get("n_open_cases") else ""
                         st.button(lab + badge_n, icon=ic, key=f"nav_{k}", type="primary" if k == cur else "secondary",
                                   width="stretch", on_click=_go, args=(k,))
-        H('<div class="fs fs-sidefoot">Bấm tên nhóm để mở/đóng · bấm mục con để xem đúng phần đó.<br>'
+        H('<div class="fs fs-sidefoot">Bấm một mục để mở trang · nhóm Dữ liệu &amp; quản trị bấm để mở/đóng.<br>'
           f'<b>Ứng dụng khách FS Pay</b>: <a href="{customer_url()}" target="_blank" style="color:#9FC3FF">mở trang riêng</a></div>')
     return cur
 
