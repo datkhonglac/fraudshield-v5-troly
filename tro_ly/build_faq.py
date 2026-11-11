@@ -189,8 +189,8 @@ Q = [
      "điểm rủi ro và nuôi hàng đợi **Nghi vấn mẫu mới**.", "ev_kpi"),
     ("F08", "Mô hình & kiểm định", "Mô hình có dùng dữ liệu tương lai không?",
      "rò rỉ dữ liệu|data leakage|dùng dữ liệu tương lai|kiểm tra trùng khớp",
-     "Không. Mọi đặc trưng chỉ dùng giao dịch xảy ra **trước** thời điểm chấm. Bằng chứng: trang **Chấm thời gian thực** "
-     "cho 8.000 giao dịch chạy lần lượt từng cái và so với chấm theo lô – trùng 100%.", "ev_rt"),
+     "Không. Mọi đặc trưng chỉ dùng giao dịch xảy ra **trước** thời điểm chấm. Bằng chứng: nhóm đã cho 8.000 giao dịch "
+     "chạy lần lượt từng cái qua bộ chấm luồng và so với chấm theo lô – điểm và mức trùng 100% (test tự động trong gói nộp).", "ev_kpi"),
     ("F09", "Mô hình & kiểm định", "Vì sao vẫn còn gian lận bị lọt?",
      "gian lận bị lọt|bỏ sót|sao không bắt hết|false negative",
      "Chủ yếu 2 nhóm: giao dịch **đầu tiên** của chuỗi dồn dập (lúc đó chưa có dấu hiệu gì) và **lừa đảo chính chủ** (khách "
@@ -214,7 +214,7 @@ Q = [
      "kiểm tra theo thời gian: học tháng 1–4, thử tháng 5–6 – recall can thiệp 86,4%.", "ev_kpi"),
     ("F14", "Mô hình & kiểm định", "Chấm một giao dịch mất bao lâu?",
      "tốc độ chấm|độ trễ|latency|bao nhiêu ms",
-     "Trung bình dưới 1 ms mỗi giao dịch khi chấm theo luồng (khoảng 0,5–0,8 ms tuỳ máy chủ).", "ev_rt"),
+     "Khoảng 1 ms mỗi giao dịch khi chấm theo luồng (0,5–2 ms tuỳ máy chủ). Xem ô **ms / giao dịch** trên dải xanh của trang **Giám sát thời gian thực**.", "live"),
 
     # ---------------------------------------------------------------- G. Dữ liệu & quản trị
     ("G01", "Dữ liệu & quản trị", "Tải dữ liệu mới lên thế nào?",

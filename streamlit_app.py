@@ -91,8 +91,7 @@ GROUPS = [
     ("ops", "Xử lý cảnh báo", [
         ("log", "Nhật ký quyết định", ":material/history:", "Nhật ký quyết định và tác vụ")]),
     ("model", "Kiểm định", [
-        ("ev_kpi", "Chỉ số chính", ":material/verified_user:", "Chỉ số kiểm định chính"),
-        ("ev_rt", "Chấm thời gian thực", ":material/speed:", "Kiểm tra chấm thời gian thực")]),
+        ("ev_kpi", "Chỉ số chính", ":material/verified_user:", "Chỉ số kiểm định chính")]),
     ("rt", "Giám sát thời gian thực", [
         ("live", "Giám sát thời gian thực", ":material/bolt:", "Giám sát giao dịch theo thời gian thực")]),
     ("novel", "Bắt gian lận mới", [
@@ -103,7 +102,7 @@ GROUPS = [
         ("admin", "Học lại & quản trị", ":material/admin_panel_settings:", "Học lại có kiểm soát và quản trị")]),
 ]
 NAV = [it for _, _, items in GROUPS for it in items]
-NAV_ALIAS = {"eval": "ev_kpi", "cases": "dash", "overview": "dash", "cust": "dash",
+NAV_ALIAS = {"eval": "ev_kpi", "cases": "dash", "overview": "dash", "cust": "dash", "ev_rt": "live",
              "ev_tiers": "ev_kpi", "ev_rules": "ev_kpi", "ev_err": "ev_kpi", "ev_fair": "ev_kpi"}  # các trang đã ẩn khỏi menu
 
 st.set_page_config(page_title="Fraud Shield · Digital Payment Risk Console", page_icon="🛡️",

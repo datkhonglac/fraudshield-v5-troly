@@ -33,7 +33,7 @@ Bấm tên nhóm để mở/đóng danh sách mục con; bấm mục con để c
 |---|---|---|
 | **Tra cứu & phân tích** | Dashboard tổng quan · Tra cứu giao dịch | Dashboard (chỉ đếm trên 8.000 giao dịch): 1 Đã phân tích bao nhiêu → 2 Phát hiện bao nhiêu rủi ro → 3 Nguyên nhân → 4 Giao dịch có điểm Isolation Forest cao (20 giao dịch bất thường nhất ngoài nhóm tạm giữ) → 5 Hàng đợi hồ sơ. Tra cứu mặc định xếp CRITICAL → HIGH → MEDIUM → LOW |
 | **Xử lý cảnh báo** | Nhật ký quyết định | – |
-| **Kiểm định** (2.000 giao dịch có nhãn) | Chỉ số chính · Chấm thời gian thực | Chỉ số chính: Tổng hợp · Danh sách giao dịch có nhãn · Bắt đúng · Bỏ sót · Bắt sai · Thử đổi ngưỡng · Có hiệu chỉnh được không? |
+| **Kiểm định** (2.000 giao dịch có nhãn) | Chỉ số chính | Chỉ số chính: Tổng hợp · Danh sách giao dịch có nhãn · Bắt đúng · Bỏ sót · Bắt sai · Thử đổi ngưỡng · Có hiệu chỉnh được không? |
 | **Giám sát thời gian thực** | Giám sát thời gian thực | Cần xử lý ngay · Biểu đồ điểm · Giao dịch đang đến · Đối chiếu bộ mẫu |
 | **Bắt gian lận mới** | Kiểu gian lận mới | Kết quả · Đánh đổi ngân sách · Cách hoạt động |
 | **Dữ liệu & quản trị** | Tải & chạy dữ liệu · Tải kết quả · Học lại & quản trị | – |
