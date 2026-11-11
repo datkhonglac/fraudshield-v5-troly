@@ -2380,7 +2380,10 @@ def pending_events(hub):
     with hub["lock"]:
         evs = [e for e in hub["events"] if e["status"].startswith("Tạm giữ")
                or (e["status"].startswith("Chờ khách") and e["src"] != "Dữ liệu BTC")]
-    return sorted(evs, key=lambda e: (e["src"] == "Dữ liệu BTC", -e["wall"]))
+    # Ưu tiên xử lý: CRITICAL trước, rồi HIGH, rồi MEDIUM; cùng mức thì RiskScore cao hơn lên trên,
+    # bằng điểm thì giao dịch đến sớm hơn (sắp hết SLA) lên trên.
+    rank = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
+    return sorted(evs, key=lambda e: (e["src"] == "Dữ liệu BTC", rank.get(e["level"], 9), -float(e.get("score", 0)), e["wall"]))
 
 
 def sla_left(ev):
@@ -2398,11 +2401,11 @@ def pending_panel(hub, res, kp, limit=5):
     if not evs:
         st.caption("Không có giao dịch nào đang chờ quyết định.")
         return 0
-    for ev in evs[:limit]:
+    for i, ev in enumerate(evs[:limit], 1):
         sla, col = sla_left(ev)
         src = ""
-        H(f'<div class="fs lv-alert" style="--c:{LEVEL_COLOR[ev["level"]]}"><div class="h"><span>{badge(ev["level"])} '
-          f'<b>{e(ev["tid"])}</b> · {e(who(ev))} · <b>{money(ev["amount"])}</b>{src}</span>'
+        H(f'<div class="fs lv-alert" style="--c:{LEVEL_COLOR[ev["level"]]}"><div class="h"><span><b>#{i}</b> {badge(ev["level"])} '
+          f'<b>{e(ev["tid"])}</b> · điểm <b>{d(float(ev.get("score", 0)), 3)}</b> · {e(who(ev))} · <b>{money(ev["amount"])}</b>{src}</span>'
           f'<span class="lv-sla" style="color:{col}">{sla}</span></div>'
           f'<div class="d">{e(ev["reason"])}</div></div>')
         c = st.columns(3)
@@ -2421,7 +2424,7 @@ def queue_live_box(hub, res):
     if pending_events(hub):
         with card("q_live"):
             title("Cảnh báo mới từ luồng thời gian thực",
-                  "Giao dịch đang bị tạm giữ chờ quyết định · Chặn = từ chối giao dịch · Huỷ = huỷ và hoàn tiền · "
+                  "Giao dịch đang bị tạm giữ chờ quyết định, rủi ro cao nhất ở trên · Chặn = từ chối giao dịch · Huỷ = huỷ và hoàn tiền · "
                   "Xác thực = đã xác minh với khách, cho qua")
             pending_panel(hub, res, "q", limit=4)
 
@@ -2467,7 +2470,7 @@ def monitor_body(res):
         mon_chart(evs, hub)
     elif tab == tabs[0]:
         with card("mon_pending"):
-            title("Cần xử lý ngay", "Chặn = từ chối · Huỷ = huỷ và hoàn tiền · Xác thực = đã xác minh với khách, cho qua · "
+            title("Cần xử lý ngay", "Xếp theo mức ưu tiên: CRITICAL trước, rồi HIGH; cùng mức thì điểm RiskScore cao hơn lên trên · Chặn = từ chối · Huỷ = huỷ và hoàn tiền · Xác thực = đã xác minh với khách, cho qua · "
                   "SLA: CRITICAL 5 phút, HIGH 2 giờ")
             pending_panel(hub, res, "mon", limit=6)
     elif tab == tabs[2]:
