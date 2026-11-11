@@ -1477,22 +1477,19 @@ def page_cases(res):
               + ("tích nhiều dòng để xử lý hàng loạt cùng loại rủi ro" if bulk
                  else "bấm một dòng để mở hồ sơ · chọn một loại rủi ro để xử lý hàng loạt"))
         tbl = pd.DataFrame({"Mã hồ sơ": view.case_id, "Khách hàng": view.customer_id, "Mức rủi ro": view.case_level,
-                            "Điểm": view.max_risk_score, "Nhãn BTC": view.nhan_btc, "So với nhãn": view.so_nhan,
+                            "Điểm": view.max_risk_score, "Nhãn BTC": view.nhan_btc,
                             "Loại rủi ro": view.risk_type, "Trạng thái": view.case_status,
                             "Thời gian": pd.to_datetime(view.start_time).dt.strftime("%d/%m/%Y %H:%M"),
                             "Số GD": view.n_transactions.astype(int), "Tổng tiền (₫)": view.total_amount, "SLA": view.sla})
         lvl_css = {l: f"color:{LEVEL_COLOR[l]};font-weight:700" for l in LEVELS}
-        cmp_css = {"Đúng": "color:#2B8A3E;font-weight:700", "Bắt sai": "color:#C92A2A;font-weight:700"}
         sty = (tbl.style.map(lambda x: lvl_css.get(x, ""), subset=["Mức rủi ro"])
                .map(lambda x: f"color:{STATUS_COLOR.get(x, '#475467')};font-weight:600", subset=["Trạng thái"])
-               .map(lambda x: cmp_css.get(x, "color:#98A2B3"), subset=["So với nhãn"])
                .map(lambda x: "color:#C92A2A;font-weight:600" if str(x).startswith("Gian lận") else
                     ("color:#98A2B3" if x == "Chưa có nhãn" else ""), subset=["Nhãn BTC"])
                .format({"Điểm": lambda x: d(x, 4), "Tổng tiền (₫)": lambda x: n0(x)}))
         ev = grid(sty, height=480, on_select="rerun", selection_mode="multi-row" if bulk else "single-row",
                   key=f"cs_tbl_{rid}_{chip}_{ty}_{lbf}",
-                  column_config={"So với nhãn": st.column_config.TextColumn(width="small"),
-                                 "SLA": st.column_config.TextColumn(width="small"),
+                  column_config={"SLA": st.column_config.TextColumn(width="small"),
                                  "Số GD": st.column_config.NumberColumn(width="small")})
         try:
             rows = [i for i in ev.selection.rows if i < len(view)]
