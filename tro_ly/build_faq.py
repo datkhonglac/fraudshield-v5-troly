@@ -19,7 +19,7 @@ Q = [
      "chọn một hồ sơ rồi đọc thẻ **Tóm tắt & kết luận** và ghi quyết định. Phần đầu Dashboard cho toàn cảnh 8.000 giao dịch.", "cases"),
     ("A03", "Bắt đầu", "Menu bên trái được chia thế nào?",
      "các nhóm trong menu|menu có những gì|cấu trúc menu|tìm chức năng ở đâu",
-     "Menu có 6 nhóm, theo thứ tự: **Tra cứu & phân tích** (Dashboard tổng quan kèm hàng đợi hồ sơ, tra cứu giao dịch, khách hàng & liên kết), **Xử lý cảnh báo** (nhật ký quyết định), **Kiểm định** (các chỉ số đánh giá mô hình), **Giám sát thời gian thực**, **Bắt gian lận mới** (kiểu gian lận chưa từng học) và **Dữ liệu & quản trị** (tải dữ liệu, tải kết quả, học lại). Bấm tên nhóm để mở/đóng, bấm mục con để mở trang.", ""),
+     "Menu có 6 nhóm, theo thứ tự: **Tra cứu & phân tích** (Dashboard tổng quan kèm hàng đợi hồ sơ, tra cứu giao dịch), **Xử lý cảnh báo** (nhật ký quyết định), **Kiểm định** (các chỉ số đánh giá mô hình), **Giám sát thời gian thực**, **Bắt gian lận mới** (kiểu gian lận chưa từng học) và **Dữ liệu & quản trị** (tải dữ liệu, tải kết quả, học lại). Bấm tên nhóm để mở/đóng, bấm mục con để mở trang.", ""),
     ("A04", "Bắt đầu", "Các thẻ ngang trong trang là gì?",
      "thẻ là gì|tab trong trang|sao không thấy hết nội dung|chuyển phần trong trang",
      "Trang dài được chia thành thẻ, giống mục lục. Chỉ thẻ đang chọn được hiện để màn hình gọn; bấm tên thẻ khác "
@@ -151,8 +151,8 @@ Q = [
      "chi tiết điểm) ở **Dữ liệu & quản trị → Tải kết quả**.", "tx"),
     ("E05", "Tra cứu & phân tích", "Xem toàn bộ thói quen và liên kết của một khách ở đâu?",
      "xem một khách hàng|tra cứu khách hàng|lịch sử khách|liên kết của khách",
-     "Vào **Khách hàng & liên kết**, chọn khách (sắp theo điểm cao nhất) hoặc gõ mã khách. Có 3 thẻ: Thói quen khách, "
-     "Liên kết thiết bị và Giao dịch của khách.", "cust"),
+     "Mở **Dashboard tổng quan**, mục 5 **Hàng đợi hồ sơ**, bấm vào hồ sơ của khách đó: tab **Thói quen khách** và "
+     "**Liên kết thiết bị** cho thấy thói quen và các thiết bị, khách dùng chung. Muốn xem từng giao dịch thì dùng **Tra cứu giao dịch** và gõ mã khách vào ô tìm.", "dash"),
 
     # ---------------------------------------------------------------- F. Mô hình & kiểm định
     ("F01", "Mô hình & kiểm định", "Mô hình gồm những lớp nào?",
