@@ -1498,10 +1498,6 @@ def page_cases(res):
             rows = [i for i in ev.selection.rows if i < len(view)]
         except Exception:  # noqa
             rows = []
-        st.caption(f"Nhãn BTC: trong {n0(len(view))} hồ sơ đang hiện có {n_ok} hồ sơ chứa giao dịch được BTC gắn nhãn gian lận, "
-                   f"{n_bad} hồ sơ mà mọi giao dịch đều được gắn nhãn bình thường (bắt sai), còn lại chưa có nhãn hoặc chưa đủ nhãn. Lưu ý: mô hình "
-                   "chạy trên toàn bộ dữ liệu đã học từ chính các nhãn này, nên mức khớp ở đây cao hơn thực tế; độ chính xác "
-                   "khách quan (mô hình chưa thấy nhãn) xem ở Kiểm định → Chỉ số chính.")
         if bulk:
             if st.button(f"Xử lý hàng loạt {len(rows)} hồ sơ đã chọn" if rows else "Xử lý hàng loạt (tích chọn hồ sơ trước)",
                          icon=":material/done_all:", type="primary", disabled=not rows, width="stretch",
