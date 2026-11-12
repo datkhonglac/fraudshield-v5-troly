@@ -17,6 +17,8 @@ PRESETS = {
     "Thử sai OTP liên tục": dict(dev=1, home=True, ip="VN", otp=1, mult=3.0, cat=["GAMING"], mrisk="LOW"),
     "Chuyển gấp 10 lần": dict(dev=0, home=True, ip="VN", otp=0, mult=10.0,
                               cat=["MONEY_TRANSFER", "GAMING", "HOTEL"], mrisk="HIGH"),
+    "Tấn công tổng hợp": dict(dev=2, home=False, ip="SG", otp=1, gap=180, mult=10.0,
+                              cat=["MONEY_TRANSFER", "GAMING"], mrisk="HIGH"),
 }
 GAP_S = 3 * 3600  # mặc định "Vài giờ trước"
 
@@ -51,13 +53,15 @@ def send_preset(sc0, hist, merch, cid, name):
     if p["dev"] == 0:
         dev = h.device_id.mode().iloc[0] if len(h) else f"DEV-{cid}"
     else:
-        dev = "DEV-LA-0001"
+        rooted = p["dev"] == 2
+        dev = "DEV-ROOT-0001" if rooted else "DEV-LA-0001"
         sc.dev[dev] = {"first_seen_date": clock.normalize(), "registered_customer_id": None,
-                       "device_risk_level": "MEDIUM", "rooted_or_jailbroken": False, "emulator_flag": False}
+                       "device_risk_level": "HIGH" if rooted else "MEDIUM", "rooted_or_jailbroken": rooted,
+                       "emulator_flag": False}
     last = sc.C.get(cid, {}).get("last")
     base = clock + pd.Timedelta(seconds=15)
     if last is not None:
-        base = max(base, pd.Timestamp("2000-01-01") + pd.Timedelta(seconds=last + GAP_S))
+        base = max(base, pd.Timestamp("2000-01-01") + pd.Timedelta(seconds=last + p.get("gap", GAP_S)))
     statuses = ["FAILED", "FAILED", "SUCCESS"] if p["otp"] else ["SUCCESS"]
     out = None
     for i, stt in enumerate(statuses):

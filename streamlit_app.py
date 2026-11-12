@@ -2895,6 +2895,11 @@ PRESETS = {
                                     otp=1, mult=3.0, cat=["GAMING"], mrisk="LOW"),
     "💰 Chuyển gấp 10 lần": dict(desc="Merchant rủi ro cao, số tiền bất thường", dev=0, home=True, ip="VN", otp=0,
                                 mult=10.0, cat=["MONEY_TRANSFER", "GAMING", "HOTEL"], mrisk="HIGH"),
+    # Mọi tín hiệu cùng lúc: hồi quy logistic và Isolation Forest chấm 1,0; hệ luật gộp noisy-OR ≈ 0,9999
+    # → RiskScore ≈ 0,99998, hiển thị 1,000 (noisy-OR không bao giờ chạm đúng 1).
+    "☠️ Tấn công tổng hợp (RiskScore ≈ 1)": dict(desc="Máy root ở nước ngoài, sai OTP, dồn dập, gấp 10 lần, merchant rủi ro cao",
+                                               dev=2, home=False, ip="SG", otp=1, gap=1, mult=10.0,
+                                               cat=["MONEY_TRANSFER", "GAMING"], mrisk="HIGH"),
 }
 
 PHONE_CSS = """<style>
@@ -3022,7 +3027,7 @@ def _ph_preset(name, hub):
     ss.ph_loc = prof["home"] if p["home"] else other[sum(map(ord, ss.ph_cust)) % len(other)]
     ss.ph_ip = p["ip"]
     ss.ph_otp = OTP_MODES[p["otp"]]
-    ss.ph_gap = list(GAPS)[0]
+    ss.ph_gap = list(GAPS)[p.get("gap", 0)]
     ss.ph_chan = prof["chan"] if prof["chan"] in CHANNELS else "MOBILE_BANKING"
     ss.ph_amt = int(round(prof["avg"] * p["mult"] / 1000) * 1000)
     ms = hub["merch"]
@@ -3238,9 +3243,11 @@ def control_panel(hub, custs, prof):
                              help="Mặc định vài giờ trước. Chọn 3 phút trước để thử tình huống giao dịch dồn dập (luật R6).")
         H('<div class="fs pn-g">Kịch bản nhanh (bấm là điền sẵn cả app lẫn bảng này)</div>')
         names = list(PRESETS)
-        for i in range(0, 4, 2):
+        for i in range(0, len(names), 2):
             cc = st.columns(2)
             for j, col in enumerate(cc):
+                if i + j >= len(names):
+                    break
                 nm = names[i + j]
                 col.button(f"**{nm}**  \n{PRESETS[nm]['desc']}", key=f"sc_{i + j}", width="stretch",
                            on_click=_ph_preset, args=(nm, hub))

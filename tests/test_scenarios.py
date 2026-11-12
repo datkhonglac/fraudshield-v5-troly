@@ -76,6 +76,11 @@ class TestFullRun(unittest.TestCase):
             for cid in custs:
                 with self.subTest(kich_ban=name, khach=cid):
                     self.assertIn(str(S.send_preset(sc, hist, merch, cid, name)["risk_level"]), ok)
+        for cid in custs:                       # kịch bản tấn công tổng hợp: CRITICAL, RiskScore hiển thị 1,000
+            with self.subTest(kich_ban="Tấn công tổng hợp", khach=cid):
+                r = S.send_preset(sc, hist, merch, cid, "Tấn công tổng hợp")
+                self.assertEqual(str(r["risk_level"]), "CRITICAL")
+                self.assertGreaterEqual(round(r["risk_score"], 3), 1.0)
 
 
 class TestEdgeCases(unittest.TestCase):
