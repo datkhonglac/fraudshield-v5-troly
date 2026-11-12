@@ -627,6 +627,8 @@ def leave_one_type_out(idx, y, ft, flags, X, an, thr, med, nov_thr, ctx=None, do
         if tgt.sum() < 5:
             continue
         keep = ~tgt
+        if y[keep].sum() == 0:           # chỉ có 1 kiểu gian lận: ẩn nó thì không còn ca nào để học
+            continue
         fl = flags.copy()
         for r in TYPE_RULES.get(T, []):
             fl[r] = 0
@@ -648,6 +650,8 @@ def leave_one_type_out(idx, y, ft, flags, X, an, thr, med, nov_thr, ctx=None, do
                     "medium_plus_base": int(base_mp.sum()), "ctx_only": int((dr[idx[tgt]] & ~base_mp).sum()),
                     "queue": int(nov[idx[tgt]].sum()),
                     "queue_size": int(nov.sum())})
+    if not out:                          # dữ liệu không đủ ≥ 2 kiểu gian lận có nhãn → bỏ qua thí nghiệm
+        return []
     tot = {"type": "TỔNG", "rules_off": "", "n": sum(o["n"] for o in out), "high": sum(o["high"] for o in out),
            "medium_plus": sum(o["medium_plus"] for o in out), "medium_plus_base": sum(o["medium_plus_base"] for o in out),
            "ctx_only": sum(o["ctx_only"] for o in out), "queue": sum(o["queue"] for o in out),
