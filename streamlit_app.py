@@ -2798,6 +2798,18 @@ def mon_tally(tl, hub):
                 kcard(n0(tl["fr_low"]), "Gian lận lọt", LEVEL_COLOR["CRITICAL"], "mô hình cho qua"),
                 kcard(f'{n0(tl["lg_blk"])} / {n0(tl["lg"])}', "Giao dịch bình thường bị chặn nhầm", PURPLE,
                       f'{n0(tl["lg_med"])} giao dịch bị hỏi thêm')]) + "</div>")
+            # Recall · Precision · F1 tính ở mức tạm giữ (HIGH/CRITICAL) trên các giao dịch mẫu đã phát
+            tp, fr, fp = tl["fr_blk"], tl["fr"], tl["lg_blk"]
+            rec = tp / fr if fr else None
+            pre = tp / (tp + fp) if (tp + fp) else None
+            f1 = 2 * rec * pre / (rec + pre) if rec is not None and pre is not None and (rec + pre) else None
+            show = lambda v: d(v, 3) if v is not None else "–"
+            H('<div class="fs fs-kgrid k3" style="margin:12px 0 2px">' + "".join([
+                kcard(show(rec), "Recall", GREEN, f"{n0(tp)}/{n0(fr)} gian lận bị tạm giữ"),
+                kcard(show(pre), "Precision", BLUE, f"{n0(tp)} đúng / {n0(tp + fp)} giao dịch bị tạm giữ"),
+                kcard(show(f1), "F1-score", PURPLE, "trung bình điều hoà của Recall và Precision")]) + "</div>")
+            st.caption("Recall, Precision, F1 tính ở mức tạm giữ (HIGH/CRITICAL) trên các giao dịch mẫu đã phát lên luồng, "
+                       "cập nhật theo từng giao dịch. Số chính thức của mô hình xem ở mục Kiểm định.")
 
 
 def customer_url():
