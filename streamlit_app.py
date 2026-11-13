@@ -2520,7 +2520,7 @@ def eval_weights(res):
             st.session_state[k] = v
     with card("wts"):
         title("Thử đổi trọng số RiskScore",
-              f"RiskScore = w₁ × LR + w₂ × Luật + w₃ × IF. Nhập 3 trọng số (tổng không vượt quá 1) rồi nhấn Enter. "
+              f"RiskScore = w₁ × LR + w₂ × Luật + w₃ × IF. Nhập 3 trọng số (tổng phải bằng 1) rồi nhấn Enter. "
               f"Điểm từng tầng là điểm kiểm định 5-fold; ngưỡng chặn được chọn lại theo F1 cao nhất trong từng fold "
               f"như số chính thức – để nguyên {d(W0[0], 1)} · {d(W0[1], 1)} · {d(W0[2], 1)} sẽ ra đúng các chỉ số ở trên.")
         if not need <= set(lv.columns):
@@ -2538,12 +2538,9 @@ def eval_weights(res):
             st.button("Khôi phục mặc định", key=f"wr_{rid}", type="tertiary", icon=":material/restart_alt:",
                       on_click=lambda: st.session_state.update(dict(zip(keys, W0))))
         tot = round(sum(w), 4)
-        if tot > 1:
-            st.error(f"Tổng trọng số = {d(tot, 2)} – vượt quá 1. Hãy giảm bớt một trong ba trọng số.",
-                     icon=":material/error:")
-            return
-        if tot <= 0:
-            st.error("Cần ít nhất một trọng số lớn hơn 0.", icon=":material/error:")
+        if abs(tot - 1) > 1e-6:
+            st.error(f"Tổng trọng số = {d(tot, 2)} – " + ("vượt quá 1. Hãy giảm bớt" if tot > 1 else "chưa đủ 1. Hãy tăng thêm")
+                     + f" {d(abs(tot - 1), 2)} ở một trong ba trọng số.", icon=":material/error:")
             return
         y, fold = lv.y.values, lv.fold.values
         comp = np.c_[lv.ml_oof.values, lv.rule_oof.values, lv.an_oof.values]
@@ -2562,9 +2559,7 @@ def eval_weights(res):
                 return ""
             v = a[k] - b[k]
             return "bằng mặc định" if abs(v) < 5e-4 else f"{'+' if v > 0 else '−'}{d(abs(v))} so với mặc định"
-        H(f'<div class="thr-lab">Tổng trọng số: <b>{d(tot, 2)}</b>' +
-          (" – nhỏ hơn 1 chỉ làm điểm thấp đi đều nhau, ngưỡng được chọn lại nên kết quả chỉ phụ thuộc tỷ lệ "
-           "giữa 3 trọng số" if tot < 1 else "") + "</div>")
+        H('<div class="thr-lab">Tổng trọng số: <b>1,00</b> ✓</div>')
         kgrid([kcard(d(a["P"]), "Precision", BLUE, f"{a['tp']} / {a['tp'] + a['fp']} cảnh báo là gian lận thật", delta("P")),
                kcard(d(a["R"]), "Recall", GREEN, f"{a['tp']} / {a['tp'] + a['fn']} gian lận bị chặn", delta("R")),
                kcard(d(a["F1"]), "F1-score", PURPLE, f"mặc định {d(b['F1'])}" if not same else "", delta("F1")),
