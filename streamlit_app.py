@@ -3488,7 +3488,6 @@ def retrain_section(res):
                         {"m": "PR-AUC trên giai đoạn kiểm tra", "b": d(b_["pr_auc"]), "a": d(a_["pr_auc"])},
                         {"m": "Recall chặn", "b": d(b_["recall"]), "a": d(a_["recall"])},
                         {"m": "Báo nhầm", "b": b_["fp"], "a": a_["fp"]},
-                        {"m": "Recall can thiệp", "b": d(b_["intervene_recall"]), "a": d(a_["intervene_recall"])},
                         {"m": "Khách thật phải xác thực thêm", "b": pct(b_["stepup_rate"], 2), "a": pct(a_["stepup_rate"], 2)}]
                 table(rows, [("m", f"Học {c['train_period']} · kiểm tra {c['test_period']} ({c['fraud_test']} gian lận)"),
                              ("b", "Trước"), ("a", "Sau")], num_cols=("b", "a"))
