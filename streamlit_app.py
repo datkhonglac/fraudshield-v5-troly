@@ -222,7 +222,7 @@ padding:2px 9px;border-radius:999px}
 [class*="st-key-card_db4"] .fs-tw,[class*="st-key-card_ev_fraudlist"] .fs-tw{max-height:560px;overflow:auto}
 [class*="st-key-card_ev_fraudlist"] .fs-table th{position:sticky;top:0;z-index:1}
 .thr-lab{font-size:13px;font-weight:600;color:#344054;margin:4px 0 -6px}
-[class*="st-key-thr_"] input,[class*="st-key-thrm_"] input,[class*="st-key-thrc_"] input{font-size:18px!important;font-weight:700;color:#0B1F45}
+[class*="st-key-thr_"] input,[class*="st-key-thrm_"] input,[class*="st-key-thrc_"] input,[class*="st-key-wf_"] input{font-size:18px!important;font-weight:700;color:#0B1F45}
 .ev-pill{font-size:11.5px;font-weight:700;border-radius:6px;padding:2px 8px;white-space:nowrap}
 [class*="st-key-card_db4"] .fs-table th{position:sticky;top:0;z-index:1}
 .if-chip{display:inline-block;font-size:11.5px;background:#FFF4E6;color:#B4540A;border:1px solid #FFD8A8;border-radius:20px;
@@ -1749,6 +1749,7 @@ def page_eval(res):
         eval_overview(res, b)
     elif tab == ET[5]:
         eval_threshold(res)
+        eval_weights(res)
     elif tab == ET[6]:
         eval_tuning(res)
     else:
@@ -2497,6 +2498,78 @@ def eval_threshold(res):
                         name=f"Ngưỡng chặn {d(t, 4)}", hovertemplate="Recall %{x:.3f}<br>Precision %{y:.3f}<extra></extra>")
         style(fig, 330, xaxis=dict(title="Recall", range=[0, 1.02]), yaxis=dict(title="Precision", range=[0, 1.04]))
         chart(fig, "pr")
+
+
+def _nested_hold(y, s, fold):
+    """Chặn theo cách tính chính thức: mỗi fold tự chọn ngưỡng F1 cao nhất trên 4 fold còn lại."""
+    hold, ths = np.zeros(len(y), bool), []
+    for k in sorted(set(fold)):
+        tr, va = fold != k, fold == k
+        t_k = F.best_thr(y[tr], s[tr]); ths.append(t_k)
+        hold[va] = s[va] >= t_k
+    return hold, ths
+
+
+def eval_weights(res):
+    lv, rid = res["lab_view"], res["rid"]
+    need = {"ml_oof", "rule_oof", "an_oof", "fold"}
+    W0 = tuple(float(x) for x in F.W_FUSION)
+    keys = [f"wf_{i}_{rid}" for i in range(3)]
+    for k, v in zip(keys, W0):
+        if k not in st.session_state:
+            st.session_state[k] = v
+    with card("wts"):
+        title("Thử đổi trọng số RiskScore",
+              f"RiskScore = w₁ × LR + w₂ × Luật + w₃ × IF. Nhập 3 trọng số (tổng không vượt quá 1) rồi nhấn Enter. "
+              f"Điểm từng tầng là điểm kiểm định 5-fold; ngưỡng chặn được chọn lại theo F1 cao nhất trong từng fold "
+              f"như số chính thức – để nguyên {d(W0[0], 1)} · {d(W0[1], 1)} · {d(W0[2], 1)} sẽ ra đúng các chỉ số ở trên.")
+        if not need <= set(lv.columns):
+            st.info("Bản chạy này không lưu điểm từng tầng nên chưa thử đổi trọng số được.", icon=":material/info:")
+            return
+        cols = st.columns([1, 1, 1, 0.7], vertical_alignment="bottom")
+        names = ["w₁ · LR (học máy)", "w₂ · Luật", "w₃ · IF (bất thường)"]
+        w = []
+        for i, (c, nm) in enumerate(zip(cols, names)):
+            with c:
+                v = st.number_input(f"{nm} · mặc định {d(W0[i], 2)}", min_value=0.0, max_value=1.0, step=0.05,
+                                    format="%.2f", key=keys[i])
+            w.append(float(v if v is not None else (st.session_state.get(keys[i]) or 0.0)))
+        with cols[3]:
+            st.button("Khôi phục mặc định", key=f"wr_{rid}", type="tertiary", icon=":material/restart_alt:",
+                      on_click=lambda: st.session_state.update(dict(zip(keys, W0))))
+        tot = round(sum(w), 4)
+        if tot > 1:
+            st.error(f"Tổng trọng số = {d(tot, 2)} – vượt quá 1. Hãy giảm bớt một trong ba trọng số.",
+                     icon=":material/error:")
+            return
+        if tot <= 0:
+            st.error("Cần ít nhất một trọng số lớn hơn 0.", icon=":material/error:")
+            return
+        y, fold = lv.y.values, lv.fold.values
+        comp = np.c_[lv.ml_oof.values, lv.rule_oof.values, lv.an_oof.values]
+
+        def metrics(ww):
+            sc = np.clip(comp @ np.asarray(ww), 0, 1)
+            h, ths = _nested_hold(y, sc, fold)
+            tp, fp = int((h & (y == 1)).sum()), int((h & (y == 0)).sum()); fn = int(y.sum()) - tp
+            P = tp / max(1, tp + fp); Rc = tp / max(1, tp + fn)
+            return dict(tp=tp, fp=fp, fn=fn, P=P, R=Rc, F1=2 * P * Rc / max(1e-9, P + Rc), thr=F.best_thr(y, sc))
+        a, b = metrics(w), metrics(W0)
+        same = all(abs(x - y0) < 1e-9 for x, y0 in zip(w, W0))
+
+        def delta(k):
+            if same:
+                return ""
+            v = a[k] - b[k]
+            return "bằng mặc định" if abs(v) < 5e-4 else f"{'+' if v > 0 else '−'}{d(abs(v))} so với mặc định"
+        H(f'<div class="thr-lab">Tổng trọng số: <b>{d(tot, 2)}</b>' +
+          (" – nhỏ hơn 1 chỉ làm điểm thấp đi đều nhau, ngưỡng được chọn lại nên kết quả chỉ phụ thuộc tỷ lệ "
+           "giữa 3 trọng số" if tot < 1 else "") + "</div>")
+        kgrid([kcard(d(a["P"]), "Precision", BLUE, f"{a['tp']} / {a['tp'] + a['fp']} cảnh báo là gian lận thật", delta("P")),
+               kcard(d(a["R"]), "Recall", GREEN, f"{a['tp']} / {a['tp'] + a['fn']} gian lận bị chặn", delta("R")),
+               kcard(d(a["F1"]), "F1-score", PURPLE, f"mặc định {d(b['F1'])}" if not same else "", delta("F1")),
+               kcard(f"{a['fn']} / {a['fp']}", "Bỏ sót / báo nhầm", LEVEL_COLOR["HIGH"],
+                     f"ngưỡng chặn (F1 cao nhất trên 2.000 nhãn): {d(a['thr'], 4)}")])
 
 
 def eval_fair(rep):
