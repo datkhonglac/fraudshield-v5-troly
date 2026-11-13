@@ -2460,8 +2460,8 @@ def eval_threshold(res):
     with card("thr"):
         title("Thử thay đổi ngưỡng cảnh báo",
               "Nhập ngưỡng tạm giữ và ngưỡng xác thực thêm rồi nhấn Enter để thấy đánh đổi giữa bắt được "
-              "nhiều gian lận và báo nhầm. Điểm dùng ở đây là điểm out-of-fold tại một ngưỡng cố định nên có thể chênh "
-              "nhẹ so với bảng so sánh (ngưỡng lồng).")
+              "nhiều gian lận và báo nhầm. Tính giống hệt số chính thức: mỗi fold dùng ngưỡng riêng, khi đổi ngưỡng "
+              "thì ngưỡng của mọi fold dịch cùng một khoảng – để nguyên mặc định sẽ ra đúng các chỉ số ở trên.")
         c1, c2 = st.columns(2)
         with c1:
             t = st.number_input(f"Ngưỡng tạm giữ (HIGH) · mặc định {d(T0, 4)}", min_value=0.05, max_value=0.99, step=0.01,
@@ -2477,23 +2477,27 @@ def eval_threshold(res):
             st.warning("Ngưỡng xác thực thêm phải nhỏ hơn ngưỡng tạm giữ – đang tính như bằng ngưỡng tạm giữ.",
                        icon=":material/warning:")
             m = t
-        x = lv.merge(df[["transaction_id", "ctx_score"]], on="transaction_id", how="left")
-        y, s = x.y.values, x.score.values
-        ctx_thr = (rep.get("context_layer") or {}).get("threshold")
-        door = (x.ctx_score.fillna(0).values > ctx_thr) if ctx_thr is not None else np.zeros(len(x), bool)
-        hold = s >= t
-        itv = hold | (s >= m) | door
+        y, s = lv.y.values, lv.score.values
+        nested = "thr_fold" in lv.columns
+        tf = lv.thr_fold.values if nested else np.full(len(lv), T0)        # ngưỡng tạm giữ của từng fold
+        mf = lv.med_fold.values if nested else np.full(len(lv), M0)
+        door = lv.ctx_door.values.astype(bool) if "ctx_door" in lv.columns else np.zeros(len(lv), bool)
+        t_eff = tf + (t - T0)                                                  # dịch mọi fold cùng một khoảng
+        m_eff = np.minimum(mf + (m - M0), t_eff)
+        hold = s >= t_eff
+        itv = hold | (s >= m_eff) | door
         tp, fp, fn = int((hold & (y == 1)).sum()), int((hold & (y == 0)).sum()), int((~hold & (y == 1)).sum())
         P = tp / max(1, tp + fp); R = tp / max(1, tp + fn); F1 = 2 * P * R / max(1e-9, P + R)
         nf, nl = int((y == 1).sum()), int((y == 0).sum())
         itp = int((itv & (y == 1)).sum()); step = int((itv & ~hold & (y == 0)).sum())
         cost_now = n_cost * fn + fp
-        t_best = F.cost_threshold(y, s, n_cost, 1.0)
-        hb = s >= t_best
-        cost_best = n_cost * int((~hb & (y == 1)).sum()) + int((hb & (y == 0)).sum())
+        grid_t = np.round(np.arange(0.30, 0.99, 0.0005), 4)
+        H = s[None, :] >= (tf[None, :] + (grid_t[:, None] - T0))
+        costs = n_cost * (~H & (y == 1)).sum(1) + (H & (y == 0)).sum(1)
+        ib = int(np.argmin(costs)); t_best, cost_best = float(grid_t[ib]), int(costs[ib])
         kgrid([kcard(d(P), "Precision", BLUE), kcard(d(R), "Recall", GREEN), kcard(d(F1), "F1-score", PURPLE),
                kcard(f"{fn} / {fp}", "Bỏ sót / báo nhầm", LEVEL_COLOR["HIGH"],
-                     f"{n0((df.risk_score >= t).sum())} cảnh báo trên {n0(len(df))} giao dịch")])
+                     f"chạy thật: {n0((df.risk_score >= t).sum())} cảnh báo / {n0(len(df))} giao dịch")])
         kgrid([kcard(f"{itp}/{nf}", "Gian lận bị can thiệp", GREEN, "bị tạm giữ hoặc phải xác thực thêm"),
                kcard(n0(step), "Khách thật phải xác thực thêm", "#B08900", f"{pct(step / max(1, nl), 2)} trên {n0(nl)} giao dịch thật"),
                kcard(n0(cost_now), "Chi phí tại ngưỡng tạm giữ", LEVEL_COLOR["HIGH"],
