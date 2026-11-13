@@ -755,8 +755,6 @@ def sidebar(res):
             if len(items) == 1:                          # nhóm chỉ có 1 trang: hiện thành 1 mục, bấm là mở trang
                 k, _, ic, _ = items[0]
                 badge_n = ""
-                if k == "dash" and res is not None and st.session_state.get("n_open_cases"):
-                    badge_n = f" · {n0(st.session_state.get('n_open_cases', 0))}"
                 with st.container(key=f"navtop_{g}"):
                     st.button(name + badge_n, icon=ic, key=f"nav_{k}", type="primary" if k == cur else "secondary",
                               width="stretch", on_click=_go, args=(k,))
@@ -768,8 +766,6 @@ def sidebar(res):
                 with st.container(key=f"navg_{g}"):
                     for k, lab, ic, _ in items:
                         badge_n = ""
-                        if k == "dash" and res is not None:
-                            badge_n = f" · {n0(st.session_state.get('n_open_cases', 0))}" if st.session_state.get("n_open_cases") else ""
                         st.button(lab + badge_n, icon=ic, key=f"nav_{k}", type="primary" if k == cur else "secondary",
                                   width="stretch", on_click=_go, args=(k,))
         H('<div class="fs fs-sidefoot">Bấm một mục để mở trang · nhóm Dữ liệu &amp; quản trị bấm để mở/đóng.<br>'
@@ -2452,24 +2448,35 @@ def eval_compare(rep):
 def eval_threshold(res):
     rep, df, lv = res["report"], res["df"], res["lab_view"]
     rid = res["rid"]
-    kt = f"thr_{rid}"
-    T0 = float(rep["threshold"])
-    if kt not in st.session_state:
-        st.session_state[kt] = T0
+    kt, km = f"thr_{rid}", f"thrm_{rid}"
+    T0, M0 = float(rep["threshold"]), float(rep["medium_threshold"])
+    for k, v in ((kt, T0), (km, M0)):
+        if k not in st.session_state:
+            st.session_state[k] = v
     with card("thr"):
         title("Thử thay đổi ngưỡng cảnh báo",
-              "Nhập ngưỡng tạm giữ rồi nhấn Enter để thấy đánh đổi giữa bắt được nhiều gian lận và báo nhầm. Tính giống "
+              "Nhập ngưỡng tạm giữ (HIGH) và ngưỡng xác thực thêm (ranh giới LOW – MEDIUM) rồi nhấn Enter để thấy đánh đổi giữa bắt được nhiều gian lận và báo nhầm. Tính giống "
               "hệt số chính thức: mỗi fold dùng ngưỡng riêng, khi đổi ngưỡng thì ngưỡng của mọi fold dịch cùng một "
               "khoảng – để nguyên mặc định sẽ ra đúng các chỉ số ở trên.")
-        c1, c2 = st.columns([1, 1])
+        c1, c2, c3 = st.columns([1, 1, 0.45])
         with c1:
             t = st.number_input(f"Ngưỡng tạm giữ (HIGH) · mặc định {d(T0, 4)}", min_value=0.05, max_value=0.99, step=0.01,
                                 format="%.4f", key=kt, help="Điểm từ ngưỡng này trở lên bị tạm giữ chờ chuyên viên")
         with c2:
+            m = st.number_input(f"Ngưỡng xác thực thêm (LOW → MEDIUM) · mặc định {d(M0, 4)}", min_value=0.01,
+                                max_value=0.99, step=0.01, format="%.4f", key=km,
+                                help="Điểm từ ngưỡng này đến dưới ngưỡng tạm giữ là MEDIUM – khách phải xác thực thêm "
+                                     "(OTP, sinh trắc); dưới ngưỡng này là LOW – cho qua")
+        with c3:
             st.markdown('<div style="height:28px"></div>', unsafe_allow_html=True)
             st.button("Khôi phục mặc định", key=f"pr_{rid}", type="tertiary", icon=":material/restart_alt:",
-                      on_click=lambda: st.session_state.update({kt: T0}))
+                      on_click=lambda: st.session_state.update({kt: T0, km: M0}))
         t = float(t if t is not None else (st.session_state.get(kt) or T0))
+        m = float(m if m is not None else (st.session_state.get(km) or M0))
+        if m >= t:
+            st.warning("Ngưỡng xác thực thêm phải nhỏ hơn ngưỡng tạm giữ – đang tính như bằng ngưỡng tạm giữ.",
+                       icon=":material/warning:")
+            m = t
         y, s = lv.y.values, lv.score.values
         tf = lv.thr_fold.values if "thr_fold" in lv.columns else np.full(len(lv), T0)   # ngưỡng tạm giữ của từng fold
         hold = s >= tf + (t - T0)                                                       # dịch mọi fold cùng một khoảng
@@ -2480,6 +2487,20 @@ def eval_threshold(res):
                kcard(d(F1), "F1-score", PURPLE),
                kcard(f"{fn} / {fp}", "Bỏ sót / báo nhầm", LEVEL_COLOR["HIGH"],
                      f"chạy thật: {n0((df.risk_score >= t).sum())} cảnh báo / {n0(len(df))} giao dịch")])
+        rs = df.risk_score.values
+        crit = ((df.flag_R5 == 1) | (df.flag_R6 == 1)).values
+        ctx_thr = (rep.get("context_layer") or {}).get("threshold")
+        hi = rs >= t
+        med = ~hi & (rs >= m)
+        if ctx_thr is not None and "ctx_score" in df.columns:
+            med |= ~hi & (df.ctx_score.fillna(0).values > ctx_thr)
+        n_c, n_h = int((hi & crit).sum()), int((hi & ~crit).sum())
+        n_m = int(med.sum()); n_l = len(df) - n_c - n_h - n_m
+        H(f'<div class="thr-lab">Phân bố mức rủi ro khi chạy thật trên {n0(len(df))} giao dịch với 2 ngưỡng đang nhập</div>')
+        kgrid([kcard(n0(n_l), "LOW · cho qua", LEVEL_COLOR["LOW"], pct(n_l / len(df), 1)),
+               kcard(n0(n_m), "MEDIUM · xác thực thêm", LEVEL_COLOR["MEDIUM"], pct(n_m / len(df), 1)),
+               kcard(n0(n_h), "HIGH · tạm giữ", LEVEL_COLOR["HIGH"], pct(n_h / len(df), 1)),
+               kcard(n0(n_c), "CRITICAL · tạm giữ", LEVEL_COLOR["CRITICAL"], pct(n_c / len(df), 1))])
         pr, rc, th = precision_recall_curve(y, s)
         fig = go.Figure()
         fig.add_scatter(x=rc, y=pr, mode="lines", line=dict(color=BLUE, width=2.5, shape="hv"), name="Đường PR",
