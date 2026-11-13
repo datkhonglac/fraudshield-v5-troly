@@ -2005,12 +2005,9 @@ def eval_lists(res, which):
                    kcard(pct(len(show) / max(1, n_lg), 2), "Tỷ lệ giữ nhầm", MUTED, "trên giao dịch thật có nhãn")])
         if which in (3, 4) and new:
             out = pd.DataFrame({"Mã giao dịch": show.transaction_id, "Nhãn BTC": show.nhan,
-                                "RiskScore": show.score.round(3), "Ngưỡng tạm giữ": show.thr_fold.round(3),
-                                "Chênh lệch": (show.score - show.thr_fold).round(3), "Kết quả": show.ket_qua,
+                                "RiskScore": show.score.round(3), "Kết quả": show.ket_qua,
                                 "Vì sao": show.ly_do.values, "Số tiền (₫)": show.amount})
             cfg = {"RiskScore": st.column_config.ProgressColumn(min_value=0, max_value=1, format="%.3f"),
-                   "Ngưỡng tạm giữ": st.column_config.NumberColumn(format="%.3f", help="Ngưỡng của fold đã chấm giao dịch"),
-                   "Chênh lệch": st.column_config.NumberColumn(format="%+.3f", help="Điểm trừ ngưỡng: âm = thiếu, dương = vượt"),
                    "Số tiền (₫)": st.column_config.NumberColumn(format="localized"),
                    "Vì sao": st.column_config.TextColumn(width="large")}
         else:
@@ -2024,6 +2021,7 @@ def eval_lists(res, which):
                    "RiskScore": st.column_config.NumberColumn(format="%.3f"),
                    "Gấp mức nền": st.column_config.NumberColumn(format="%.1f"),
                    "Vì sao": st.column_config.TextColumn(width="large")}
+        st.caption(_fold_note(res["lab_view"]))
         ev = grid(out, height=min(560, 38 + 35 * max(1, len(out))), column_config=cfg, on_select="rerun",
                   selection_mode="single-row", key=f"ev_tbl_{res['rid']}_{which}_{st.session_state.get('ev_list_pick', '')}")
         try:
@@ -2041,7 +2039,7 @@ def eval_lists(res, which):
         st.caption("Bấm chọn một dòng (ô vuông đầu dòng) để mở giải thích chi tiết trong trợ lý: tách RiskScore thành "
                    "LR · Luật · IF, so với ngưỡng của fold và với các ca bắt đúng, kèm hướng cải thiện. "
                    "RiskScore của 2.000 giao dịch có nhãn là điểm kiểm định: mỗi giao dịch được chấm bởi mô hình học trên 4/5 dữ liệu "
-                   "còn lại (chưa thấy nhãn của nó). Ngưỡng tạm giữ chọn riêng trong từng fold nên hơi khác nhau giữa các fold.")
+                   "còn lại (chưa thấy nhãn của nó).")
         if which == 3 and len(show):
             n_mp = int((show.ket_qua == "Xác thực thêm").sum())
             lot = show[show.ket_qua == "Cho qua"].nhan.str.replace("Gian lận · ", "").value_counts()
@@ -2135,6 +2133,14 @@ def page_ev_rt(res):
     parity_section(res)
 
 
+def _fold_note(lv):
+    if "thr_fold" not in lv.columns:
+        return "Kết quả tính theo ngưỡng tạm giữ. Bấm vào dòng để xem chi tiết."
+    lo, hi = float(lv.thr_fold.min()), float(lv.thr_fold.max())
+    return (f"Kết quả tính theo ngưỡng tạm giữ của từng fold ({d(lo, 3)}–{d(hi, 3)}), nên một số giao dịch RiskScore trên "
+            f"{d(lo, 3)} vẫn có thể là bỏ sót. Bấm vào dòng để xem chi tiết.")
+
+
 def eval_fraud_list(res):
     """Danh sách mọi giao dịch gian lận trong 2.000 nhãn BTC, kèm kết quả kiểm định ngoài mẫu."""
     t = lab_table(res)
@@ -2164,17 +2170,17 @@ def eval_fraud_list(res):
                          "t": f"{pd.Timestamp(r.datetime):%d/%m %H:%M}", "c": e(r.customer_id),
                          "a": n0(r.amount), "x": f"{r.amt_ratio:.1f}×".replace(".", ","),
                          "k": e(FRAUD_VN.get(r.fraud_type, r.fraud_type)),
-                         "s": d(r.score, 3), "th": d(r.thr_fold, 3) if has_fold else "–",
+                         "s": d(r.score, 3),
                          "kq": f'<span class="ev-pill" style="background:{bg};color:{fg}">{e(r.ket_qua)}</span>',
                          "dg": f'<span style="color:{"#2F9E44" if ok_ else "#C92A2A"};font-weight:700">{e(r.danh_gia)}</span>',
                          "sg": "".join(f'<span class="if-chip">{e(c)}</span>' for c in chips) or
                                '<span style="color:#98A2B3">không có dấu hiệu rõ</span>'})
         table(rows, [("i", "#"), ("id", "Mã giao dịch"), ("t", "Thời gian"), ("c", "Khách"), ("a", "Số tiền (₫)"),
-                     ("x", "Gấp mức nền"), ("k", "Kiểu gian lận"), ("s", "RiskScore"), ("th", "Ngưỡng tạm giữ"),
+                     ("x", "Gấp mức nền"), ("k", "Kiểu gian lận"), ("s", "RiskScore"),
                      ("kq", "Kết quả"), ("dg", "Đánh giá"), ("sg", "Luật bật / dấu hiệu")],
-              num_cols=("i", "a", "x", "s", "th"), raw_cols=("id", "kq", "dg", "sg"))
-        st.caption("Ngưỡng tạm giữ là ngưỡng của đúng fold đã chấm giao dịch đó. Bấm vào thẻ Bắt đúng / Bỏ sót hoặc gõ mã "
-                   "vào trợ lý để xem giải thích chi tiết từng giao dịch.")
+              num_cols=("i", "a", "x", "s"), raw_cols=("id", "kq", "dg", "sg"))
+        st.caption(_fold_note(res["lab_view"]).replace("Bấm vào dòng để xem chi tiết.", "Bấm vào thẻ Bắt đúng / Bỏ sót "
+                   "hoặc gõ mã vào trợ lý để xem giải thích chi tiết từng giao dịch."))
 
 
 def eval_overview(res, b):
