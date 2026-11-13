@@ -2448,15 +2448,15 @@ def eval_threshold(res):
     rid = res["rid"]
     kt, km, kc = f"thr_{rid}", f"thrm_{rid}", f"thrc_{rid}"
     T0, M0, C0 = float(rep["threshold"]), float(rep["medium_threshold"]), float(F.COST_FN / F.COST_FP)
-    for k, v in ((kt, T0), (km, M0), (kc, C0)):
+    for k, v in ((kt, T0), (km, M0)):
         if k not in st.session_state:
             st.session_state[k] = v
     with card("thr"):
         title("Thử thay đổi ngưỡng cảnh báo",
-              "Nhập ngưỡng tạm giữ, ngưỡng xác thực thêm và tỷ lệ chi phí rồi nhấn Enter để thấy đánh đổi giữa bắt được "
+              "Nhập ngưỡng tạm giữ và ngưỡng xác thực thêm rồi nhấn Enter để thấy đánh đổi giữa bắt được "
               "nhiều gian lận và báo nhầm. Điểm dùng ở đây là điểm out-of-fold tại một ngưỡng cố định nên có thể chênh "
               "nhẹ so với bảng so sánh (ngưỡng lồng).")
-        c1, c2, c3 = st.columns(3)
+        c1, c2 = st.columns(2)
         with c1:
             t = st.number_input(f"Ngưỡng tạm giữ (HIGH) · mặc định {d(T0, 4)}", min_value=0.05, max_value=0.99, step=0.01,
                                 format="%.4f", key=kt, help="Điểm từ ngưỡng này trở lên bị tạm giữ chờ chuyên viên")
@@ -2464,13 +2464,9 @@ def eval_threshold(res):
             m = st.number_input(f"Ngưỡng xác thực thêm (MEDIUM) · mặc định {d(M0, 4)}", min_value=0.01, max_value=0.99,
                                 step=0.01, format="%.4f", key=km, help="Điểm từ ngưỡng này đến dưới ngưỡng tạm giữ phải "
                                 "xác thực thêm (OTP, sinh trắc)")
-        with c3:
-            n_cost = st.number_input(f"Chi phí: 1 ca bỏ sót = ? ca báo nhầm · mặc định {d(C0, 0)}", min_value=1.0,
-                                     max_value=100.0, step=1.0, format="%.0f", key=kc,
-                                     help="Một ca gian lận bị lọt thiệt hại bằng bao nhiêu ca khách thật bị giữ nhầm")
         ss = st.session_state
         t = float(t if t is not None else (ss.get(kt) or T0)); m = float(m if m is not None else (ss.get(km) or M0))
-        n_cost = float(n_cost if n_cost is not None else (ss.get(kc) or C0))
+        n_cost = C0
         if m >= t:
             st.warning("Ngưỡng xác thực thêm phải nhỏ hơn ngưỡng tạm giữ – đang tính như bằng ngưỡng tạm giữ.",
                        icon=":material/warning:")
@@ -2501,7 +2497,7 @@ def eval_threshold(res):
         b1.button(f"Dùng ngưỡng chi phí thấp nhất · {d(t_best, 4)}", width="stretch", key=f"pc_{rid}",
                   on_click=lambda: st.session_state.update({kt: float(t_best)}))
         b2.button("Khôi phục mặc định", width="stretch", key=f"pr_{rid}", type="tertiary",
-                  icon=":material/restart_alt:", on_click=lambda: st.session_state.update({kt: T0, km: M0, kc: C0}))
+                  icon=":material/restart_alt:", on_click=lambda: st.session_state.update({kt: T0, km: M0}))
         pr, rc, th = precision_recall_curve(y, s)
         fig = go.Figure()
         fig.add_scatter(x=rc, y=pr, mode="lines", line=dict(color=BLUE, width=2.5, shape="hv"), name="Đường PR",
