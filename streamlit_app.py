@@ -2452,62 +2452,34 @@ def eval_compare(rep):
 def eval_threshold(res):
     rep, df, lv = res["report"], res["df"], res["lab_view"]
     rid = res["rid"]
-    kt, km, kc = f"thr_{rid}", f"thrm_{rid}", f"thrc_{rid}"
-    T0, M0, C0 = float(rep["threshold"]), float(rep["medium_threshold"]), float(F.COST_FN / F.COST_FP)
-    for k, v in ((kt, T0), (km, M0)):
-        if k not in st.session_state:
-            st.session_state[k] = v
+    kt = f"thr_{rid}"
+    T0 = float(rep["threshold"])
+    if kt not in st.session_state:
+        st.session_state[kt] = T0
     with card("thr"):
         title("Thử thay đổi ngưỡng cảnh báo",
-              "Nhập ngưỡng tạm giữ và ngưỡng xác thực thêm rồi nhấn Enter để thấy đánh đổi giữa bắt được "
-              "nhiều gian lận và báo nhầm. Tính giống hệt số chính thức: mỗi fold dùng ngưỡng riêng, khi đổi ngưỡng "
-              "thì ngưỡng của mọi fold dịch cùng một khoảng – để nguyên mặc định sẽ ra đúng các chỉ số ở trên.")
-        c1, c2 = st.columns(2)
+              "Nhập ngưỡng tạm giữ rồi nhấn Enter để thấy đánh đổi giữa bắt được nhiều gian lận và báo nhầm. Tính giống "
+              "hệt số chính thức: mỗi fold dùng ngưỡng riêng, khi đổi ngưỡng thì ngưỡng của mọi fold dịch cùng một "
+              "khoảng – để nguyên mặc định sẽ ra đúng các chỉ số ở trên.")
+        c1, c2 = st.columns([1, 1])
         with c1:
             t = st.number_input(f"Ngưỡng tạm giữ (HIGH) · mặc định {d(T0, 4)}", min_value=0.05, max_value=0.99, step=0.01,
                                 format="%.4f", key=kt, help="Điểm từ ngưỡng này trở lên bị tạm giữ chờ chuyên viên")
         with c2:
-            m = st.number_input(f"Ngưỡng xác thực thêm (MEDIUM) · mặc định {d(M0, 4)}", min_value=0.01, max_value=0.99,
-                                step=0.01, format="%.4f", key=km, help="Điểm từ ngưỡng này đến dưới ngưỡng tạm giữ phải "
-                                "xác thực thêm (OTP, sinh trắc)")
-        ss = st.session_state
-        t = float(t if t is not None else (ss.get(kt) or T0)); m = float(m if m is not None else (ss.get(km) or M0))
-        n_cost = C0
-        if m >= t:
-            st.warning("Ngưỡng xác thực thêm phải nhỏ hơn ngưỡng tạm giữ – đang tính như bằng ngưỡng tạm giữ.",
-                       icon=":material/warning:")
-            m = t
+            st.markdown('<div style="height:28px"></div>', unsafe_allow_html=True)
+            st.button("Khôi phục mặc định", key=f"pr_{rid}", type="tertiary", icon=":material/restart_alt:",
+                      on_click=lambda: st.session_state.update({kt: T0}))
+        t = float(t if t is not None else (st.session_state.get(kt) or T0))
         y, s = lv.y.values, lv.score.values
-        nested = "thr_fold" in lv.columns
-        tf = lv.thr_fold.values if nested else np.full(len(lv), T0)        # ngưỡng tạm giữ của từng fold
-        mf = lv.med_fold.values if nested else np.full(len(lv), M0)
-        door = lv.ctx_door.values.astype(bool) if "ctx_door" in lv.columns else np.zeros(len(lv), bool)
-        t_eff = tf + (t - T0)                                                  # dịch mọi fold cùng một khoảng
-        m_eff = np.minimum(mf + (m - M0), t_eff)
-        hold = s >= t_eff
-        itv = hold | (s >= m_eff) | door
+        tf = lv.thr_fold.values if "thr_fold" in lv.columns else np.full(len(lv), T0)   # ngưỡng tạm giữ của từng fold
+        hold = s >= tf + (t - T0)                                                       # dịch mọi fold cùng một khoảng
         tp, fp, fn = int((hold & (y == 1)).sum()), int((hold & (y == 0)).sum()), int((~hold & (y == 1)).sum())
         P = tp / max(1, tp + fp); R = tp / max(1, tp + fn); F1 = 2 * P * R / max(1e-9, P + R)
-        nf, nl = int((y == 1).sum()), int((y == 0).sum())
-        itp = int((itv & (y == 1)).sum()); step = int((itv & ~hold & (y == 0)).sum())
-        cost_now = n_cost * fn + fp
-        grid_t = np.round(np.arange(0.30, 0.99, 0.0005), 4)
-        H = s[None, :] >= (tf[None, :] + (grid_t[:, None] - T0))
-        costs = n_cost * (~H & (y == 1)).sum(1) + (H & (y == 0)).sum(1)
-        ib = int(np.argmin(costs)); t_best, cost_best = float(grid_t[ib]), int(costs[ib])
-        kgrid([kcard(d(P), "Precision", BLUE), kcard(d(R), "Recall", GREEN), kcard(d(F1), "F1-score", PURPLE),
+        kgrid([kcard(d(P), "Precision", BLUE, f"{tp} / {tp + fp} cảnh báo là gian lận thật"),
+               kcard(d(R), "Recall", GREEN, f"{tp} / {tp + fn} gian lận bị tạm giữ"),
+               kcard(d(F1), "F1-score", PURPLE),
                kcard(f"{fn} / {fp}", "Bỏ sót / báo nhầm", LEVEL_COLOR["HIGH"],
                      f"chạy thật: {n0((df.risk_score >= t).sum())} cảnh báo / {n0(len(df))} giao dịch")])
-        kgrid([kcard(f"{itp}/{nf}", "Gian lận bị can thiệp", GREEN, "bị tạm giữ hoặc phải xác thực thêm"),
-               kcard(n0(step), "Khách thật phải xác thực thêm", "#B08900", f"{pct(step / max(1, nl), 2)} trên {n0(nl)} giao dịch thật"),
-               kcard(n0(cost_now), "Chi phí tại ngưỡng tạm giữ", LEVEL_COLOR["HIGH"],
-                     f"= {d(n_cost, 0)} × {fn} bỏ sót + {fp} báo nhầm"),
-               kcard(d(t_best, 4), "Ngưỡng có chi phí thấp nhất", NAVY, f"chi phí {n0(cost_best)} với tỷ lệ {d(n_cost, 0)} : 1")])
-        b1, b2, _ = st.columns([1.2, 1, 2])
-        b1.button(f"Dùng ngưỡng chi phí thấp nhất · {d(t_best, 4)}", width="stretch", key=f"pc_{rid}",
-                  on_click=lambda: st.session_state.update({kt: float(t_best)}))
-        b2.button("Khôi phục mặc định", width="stretch", key=f"pr_{rid}", type="tertiary",
-                  icon=":material/restart_alt:", on_click=lambda: st.session_state.update({kt: T0, km: M0}))
         pr, rc, th = precision_recall_curve(y, s)
         fig = go.Figure()
         fig.add_scatter(x=rc, y=pr, mode="lines", line=dict(color=BLUE, width=2.5, shape="hv"), name="Đường PR",
@@ -2517,7 +2489,6 @@ def eval_threshold(res):
                         name=f"Ngưỡng tạm giữ {d(t, 4)}", hovertemplate="Recall %{x:.3f}<br>Precision %{y:.3f}<extra></extra>")
         style(fig, 330, xaxis=dict(title="Recall", range=[0, 1.02]), yaxis=dict(title="Precision", range=[0, 1.04]))
         chart(fig, "pr")
-
 
 def eval_fair(rep):
     c1, c2 = st.columns(2, gap="medium")
