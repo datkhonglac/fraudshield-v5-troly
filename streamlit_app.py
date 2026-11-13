@@ -2452,20 +2452,19 @@ def eval_threshold(res):
             st.session_state[k] = v
     with card("thr"):
         title("Thử thay đổi ngưỡng cảnh báo",
-              "Nhập ngưỡng chặn (HIGH) và ngưỡng xác thực thêm (ranh giới LOW – MEDIUM) rồi nhấn Enter để thấy đánh đổi giữa bắt được nhiều gian lận và báo nhầm. Tính giống "
+              "Nhập ngưỡng chặn (HIGH) và ngưỡng xác thực thêm (MEDIUM) rồi nhấn Enter để thấy đánh đổi giữa bắt được nhiều gian lận và báo nhầm. Tính giống "
               "hệt số chính thức: mỗi fold dùng ngưỡng riêng, khi đổi ngưỡng thì ngưỡng của mọi fold dịch cùng một "
               "khoảng – để nguyên mặc định sẽ ra đúng các chỉ số ở trên.")
-        c1, c2, c3 = st.columns([1, 1, 0.45])
+        c1, c2, c3 = st.columns([1, 1, 0.45], vertical_alignment="bottom")
         with c1:
-            t = st.number_input(f"Ngưỡng chặn (HIGH) · mặc định {d(T0, 4)}", min_value=0.05, max_value=0.99, step=0.01,
+            t = st.number_input(f"Ngưỡng chặn · mặc định {d(T0, 4)}", min_value=0.05, max_value=0.99, step=0.01,
                                 format="%.4f", key=kt, help="Điểm từ ngưỡng này trở lên bị chặn chờ chuyên viên")
         with c2:
-            m = st.number_input(f"Ngưỡng xác thực thêm (LOW → MEDIUM) · mặc định {d(M0, 4)}", min_value=0.01,
+            m = st.number_input(f"Ngưỡng xác thực thêm · mặc định {d(M0, 4)}", min_value=0.01,
                                 max_value=0.99, step=0.01, format="%.4f", key=km,
                                 help="Điểm từ ngưỡng này đến dưới ngưỡng chặn là MEDIUM – khách phải xác thực thêm "
                                      "(OTP, sinh trắc); dưới ngưỡng này là LOW – cho qua")
         with c3:
-            st.markdown('<div style="height:28px"></div>', unsafe_allow_html=True)
             st.button("Khôi phục mặc định", key=f"pr_{rid}", type="tertiary", icon=":material/restart_alt:",
                       on_click=lambda: st.session_state.update({kt: T0, km: M0}))
         t = float(t if t is not None else (st.session_state.get(kt) or T0))
@@ -2479,25 +2478,16 @@ def eval_threshold(res):
         hold = s >= tf + (t - T0)                                                       # dịch mọi fold cùng một khoảng
         tp, fp, fn = int((hold & (y == 1)).sum()), int((hold & (y == 0)).sum()), int((~hold & (y == 1)).sum())
         P = tp / max(1, tp + fp); R = tp / max(1, tp + fn); F1 = 2 * P * R / max(1e-9, P + R)
+        rs = df.risk_score.values
+        ctx_thr = (rep.get("context_layer") or {}).get("threshold")
+        n_med = (rs < t) & (rs >= m)
+        if ctx_thr is not None and "ctx_score" in df.columns:
+            n_med |= (rs < t) & (df.ctx_score.fillna(0).values > ctx_thr)
         kgrid([kcard(d(P), "Precision", BLUE, f"{tp} / {tp + fp} cảnh báo là gian lận thật"),
                kcard(d(R), "Recall", GREEN, f"{tp} / {tp + fn} gian lận bị chặn"),
                kcard(d(F1), "F1-score", PURPLE),
                kcard(f"{fn} / {fp}", "Bỏ sót / báo nhầm", LEVEL_COLOR["HIGH"],
-                     f"chạy thật: {n0((df.risk_score >= t).sum())} cảnh báo / {n0(len(df))} giao dịch")])
-        rs = df.risk_score.values
-        crit = ((df.flag_R5 == 1) | (df.flag_R6 == 1)).values
-        ctx_thr = (rep.get("context_layer") or {}).get("threshold")
-        hi = rs >= t
-        med = ~hi & (rs >= m)
-        if ctx_thr is not None and "ctx_score" in df.columns:
-            med |= ~hi & (df.ctx_score.fillna(0).values > ctx_thr)
-        n_c, n_h = int((hi & crit).sum()), int((hi & ~crit).sum())
-        n_m = int(med.sum()); n_l = len(df) - n_c - n_h - n_m
-        H(f'<div class="thr-lab">Phân bố mức rủi ro khi chạy thật trên {n0(len(df))} giao dịch với 2 ngưỡng đang nhập</div>')
-        kgrid([kcard(n0(n_l), "LOW · cho qua", LEVEL_COLOR["LOW"], pct(n_l / len(df), 1)),
-               kcard(n0(n_m), "MEDIUM · xác thực thêm", LEVEL_COLOR["MEDIUM"], pct(n_m / len(df), 1)),
-               kcard(n0(n_h), "HIGH · chặn", LEVEL_COLOR["HIGH"], pct(n_h / len(df), 1)),
-               kcard(n0(n_c), "CRITICAL · chặn", LEVEL_COLOR["CRITICAL"], pct(n_c / len(df), 1))])
+                     f"chạy thật trên {n0(len(df))} giao dịch: {n0((rs >= t).sum())} chặn · {n0(n_med.sum())} xác thực thêm")])
         pr, rc, th = precision_recall_curve(y, s)
         fig = go.Figure()
         fig.add_scatter(x=rc, y=pr, mode="lines", line=dict(color=BLUE, width=2.5, shape="hv"), name="Đường PR",
@@ -2507,6 +2497,7 @@ def eval_threshold(res):
                         name=f"Ngưỡng chặn {d(t, 4)}", hovertemplate="Recall %{x:.3f}<br>Precision %{y:.3f}<extra></extra>")
         style(fig, 330, xaxis=dict(title="Recall", range=[0, 1.02]), yaxis=dict(title="Precision", range=[0, 1.04]))
         chart(fig, "pr")
+
 
 def eval_fair(rep):
     c1, c2 = st.columns(2, gap="medium")
