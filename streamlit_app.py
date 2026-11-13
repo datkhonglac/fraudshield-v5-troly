@@ -1006,16 +1006,13 @@ def page_overview(res):
               pct(n_alert / n), "#FFE3E3"),
         kcard(n0(n_step), "Yêu cầu xác thực thêm", LEVEL_COLOR["MEDIUM"], "MEDIUM · không chặn, hỏi OTP/sinh trắc học",
               pct(n_step / n), "#FFF3BF"),
-        kcard(d(k["intervene_recall"]), "Recall can thiệp", GREEN,
-              f"{k['intervene_tp']}/{k['n_fraud']} gian lận bị chặn hoặc phải xác thực thêm · kiểm định 5-fold",
-              "Đạt ≥ 0,90" if k["intervene_recall"] >= .9 else "Chưa đạt 0,90", "#E6F4EA")
-        if k else kcard("–", "Recall can thiệp", GREEN, "Cần tệp nhãn để đánh giá")])
+    ])
     if k:
         with card("ov_kpi"):
             title("Bộ chỉ số 3 tầng hành động",
                   "Kiểm định 5-fold, ngưỡng chọn trên phần huấn luyện của từng fold · chỉ dùng dữ liệu quá khứ")
             H('<div class="fs fs-kgrid" style="margin:4px 0 4px">' + "".join([
-                kcard(pct(k["intervene_recall"]), "Can thiệp (chặn hoặc xác thực thêm)", GREEN,
+                kcard(f'{k["intervene_tp"]}/{k["n_fraud"]}', "Gian lận bị chặn hoặc xác thực thêm", GREEN,
                       f"đổi lại {pct(k['stepup_legit_rate'], 2)} khách thật phải xác thực thêm vài giây"),
                 kcard(pct(k["value_recall_hard"]), "Giá trị tiền gian lận bị chặn", BLUE,
                       f"{pct(k['value_recall_intervene'])} nếu tính cả xác thực thêm"),
@@ -2242,7 +2239,7 @@ def eval_tiers(res):
         title("Bộ chỉ số 3 tầng hành động",
               "Ngưỡng chặn và ngưỡng xác thực thêm đều chọn trên phần huấn luyện của từng fold rồi áp lên phần kiểm tra "
               "(ngưỡng lồng) – con số dưới đây là kết quả ngoài mẫu")
-        rows = [{"m": "Recall can thiệp (tạm giữ hoặc xác thực thêm)", "v": f'{pct(k["intervene_recall"])} ({k["intervene_tp"]}/{k["n_fraud"]})',
+        rows = [{"m": "Gian lận bị can thiệp (tạm giữ hoặc xác thực thêm)", "v": f'{k["intervene_tp"]}/{k["n_fraud"]} ({pct(k["intervene_recall"])})',
                  "c": f'{k["stepup_legit"]} khách thật ({pct(k["stepup_legit_rate"], 2)}) phải xác thực thêm'},
                 {"m": "· trong đó nhờ lớp ngữ cảnh", "v": f'{k.get("ctx_tp", 0)} ca',
                  "c": f'đổi lại {k.get("ctx_legit", 0)} khách thật bị hỏi thêm vì lệch mạnh so với thói quen'},
@@ -2251,15 +2248,15 @@ def eval_tiers(res):
                       f'{money_short(k["missed_value_top"][0]) if k["missed_value_top"] else "–"}'},
                 {"m": "Recall theo vụ tấn công", "v": f'{pct(k["case_recall"])} ({k["attacks_detected"]}/{k["n_attacks"]} vụ)',
                  "c": "vụ = các giao dịch gian lận của cùng khách cách nhau ≤ 30 phút; tính từ cảnh báo tại thời điểm giao dịch"},
-                {"m": "Recall tạm giữ (chặn ngay tại thời điểm giao dịch)", "v": f'{pct(k["hard_recall"])} ({k["hard_tp"]}/{k["n_fraud"]})',
+                {"m": "Recall (tạm giữ ngay tại thời điểm giao dịch)", "v": f'{pct(k["hard_recall"])} ({k["hard_tp"]}/{k["n_fraud"]})',
                  "c": f'{k["hard_fp"]} báo nhầm / {n0(k["n_legit"])} giao dịch thật'}]
         if ts:
             rows.append({"m": f"Kiểm tra theo thời gian (học {ts['train_months']}, kiểm tra {ts['test_months']})",
-                         "v": f'can thiệp {pct(ts["intervene_recall"])} · chặn {pct(ts["recall"])}',
+                         "v": f'Recall {pct(ts["recall"])} · can thiệp {pct(ts["intervene_recall"])}',
                          "c": f'{pct(ts["stepup_legit_rate"], 2)} khách thật phải xác thực thêm · {ts["fp"]} báo nhầm'})
         table(rows, [("m", "Chỉ số"), ("v", "Kết quả"), ("c", "Ghi chú")], num_cols=("v",))
-        st.caption(f"Ngưỡng xác thực thêm đặt để Recall can thiệp trên dữ liệu học ≥ {pct(k['target_intervene'], 0)} "
-                   f"(biên an toàn để ngoài mẫu ≥ 90%), nhưng không quá {pct(k['stepup_cap'], 0)} khách thật phải xác thực "
+        st.caption(f"Ngưỡng xác thực thêm đặt sao cho trên dữ liệu học ít nhất {pct(k['target_intervene'], 0)} gian lận bị tạm "
+                   f"giữ hoặc phải xác thực thêm (biên an toàn để ngoài mẫu ≥ 90%), nhưng không quá {pct(k['stepup_cap'], 0)} khách thật phải xác thực "
                    f"thêm. Ngưỡng chọn ở 5 fold: {', '.join(d(x, 3) for x in k['med_folds'])} · ngưỡng dùng chung: "
                    f"{d(rep['medium_threshold'], 4)}. Lớp ngữ cảnh mở thêm một cửa vào tầng xác thực thêm, ngân sách "
                    f"~{pct(F.CTX_BUDGET, 0)} giao dịch thật.")
@@ -2359,7 +2356,7 @@ def eval_loto(rep):
                              "l": f'{mp}/{tot["n"]} ({pct(mp / tot["n"], 1)})' if mp is not None else "–",
                              "_hl": abs(q - ctx.get("budget", F.CTX_BUDGET)) < 1e-9})
             hl = next((i for i, r in enumerate(rows) if r["_hl"]), None)
-            table(rows, [("b", "Ngân sách"), ("i", "Recall can thiệp"), ("s", "Khách thật bị hỏi thêm"),
+            table(rows, [("b", "Ngân sách"), ("i", "Gian lận bị can thiệp"), ("s", "Khách thật bị hỏi thêm"),
                          ("l", "Kiểu mới (ẩn từng kiểu)")], num_cols=("i", "s", "l"), hl_row=hl)
             st.caption(f"Bản v3.2 chọn ~{pct(ctx.get('budget', F.CTX_BUDGET), 0)}: tổng số khách thật phải xác thực thêm vẫn "
                        f"dưới giới hạn {pct(F.STEPUP_CAP, 0)} đã thống nhất. Tăng lên 5% gần như không bắt thêm được ca nào.")
@@ -3565,7 +3562,7 @@ def retrain_section(res):
                 rows = [{"m": "Nhãn dùng để học", "b": f'{n0(b_["n_train"])} ({b_["fraud_train"]} gian lận)',
                          "a": f'{n0(a_["n_train"])} ({a_["fraud_train"]} gian lận)'},
                         {"m": "PR-AUC trên giai đoạn kiểm tra", "b": d(b_["pr_auc"]), "a": d(a_["pr_auc"])},
-                        {"m": "Recall chặn", "b": d(b_["recall"]), "a": d(a_["recall"])},
+                        {"m": "Recall", "b": d(b_["recall"]), "a": d(a_["recall"])},
                         {"m": "Báo nhầm", "b": b_["fp"], "a": a_["fp"]},
                         {"m": "Khách thật phải xác thực thêm", "b": pct(b_["stepup_rate"], 2), "a": pct(a_["stepup_rate"], 2)}]
                 table(rows, [("m", f"Học {c['train_period']} · kiểm tra {c['test_period']} ({c['fraud_test']} gian lận)"),
