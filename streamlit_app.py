@@ -219,7 +219,9 @@ padding:2px 9px;border-radius:999px}
 .fs-table tr.hl td{font-weight:700;background:#F3F7FF}
 .fs-table tr.bad td{background:#FFF5F5}
 .fs-table .best{color:var(--blue);font-weight:700}
-[class*="st-key-card_db4"] .fs-tw{max-height:620px;overflow:auto}
+[class*="st-key-card_db4"] .fs-tw,[class*="st-key-card_ev_fraudlist"] .fs-tw{max-height:560px;overflow:auto}
+[class*="st-key-card_ev_fraudlist"] .fs-table th{position:sticky;top:0;z-index:1}
+.ev-pill{font-size:11.5px;font-weight:700;border-radius:6px;padding:2px 8px;white-space:nowrap}
 [class*="st-key-card_db4"] .fs-table th{position:sticky;top:0;z-index:1}
 .if-chip{display:inline-block;font-size:11.5px;background:#FFF4E6;color:#B4540A;border:1px solid #FFD8A8;border-radius:20px;
 padding:1px 8px;margin:2px 3px 2px 0;white-space:nowrap}
@@ -2131,12 +2133,55 @@ def page_ev_rt(res):
     parity_section(res)
 
 
+def eval_fraud_list(res):
+    """Danh sách mọi giao dịch gian lận trong 2.000 nhãn BTC, kèm kết quả kiểm định ngoài mẫu."""
+    t = lab_table(res)
+    f = t[t.y == 1].copy()
+    if not len(f):
+        return
+    has_fold = "thr_fold" in f.columns
+    f = f.sort_values(["score"], ascending=False)
+    n_ok = int((f.danh_gia == "Bắt đúng").sum())
+    n_itv = int(((f.danh_gia == "Bỏ sót") & f.intervene).sum())
+    with card("ev_fraudlist"):
+        title(f"Danh sách {n0(len(f))} giao dịch gian lận trong {n0(len(t))} nhãn BTC",
+              f"Tạm giữ đúng {n0(n_ok)} · bỏ sót nhưng vẫn phải xác thực thêm {n0(n_itv)} · lọt hoàn toàn "
+              f"{n0(len(f) - n_ok - n_itv)} · điểm ngoài mẫu (mô hình chưa thấy nhãn của giao dịch), sắp từ cao xuống thấp")
+        CHIP = {"R1 mạnh": "R1 · tiền ≥ 5×", "R1 nhẹ": "R1 · tiền 3–5×", "R2": "R2 · máy lạ", "R3": "R3 · IP nước ngoài",
+                "R4": "R4 · merchant rủi ro", "R5": "R5 · thất bại liên tiếp", "R6": "R6 · dồn dập", "R7": "R7 · máy dùng chung",
+                "C1": "C1 · máy root/giả lập", "C2": "C2 · không xác thực"}
+        RES = {"Tạm giữ": ("#FFE3E3", "#C92A2A"), "Xác thực thêm": ("#FFF3BF", "#8A6100"), "Cho qua": ("#E7F0FD", "#1C5DBF")}
+        rows = []
+        for i, r in enumerate(f.itertuples(), 1):
+            bg, fg = RES[r.ket_qua]
+            ok_ = r.danh_gia == "Bắt đúng"
+            chips = [CHIP.get(x.strip(), x.strip()) for x in str(r.luat).split(",") if x.strip() and x.strip() != "–"]
+            chips += [n for n, k in [("Máy lạ", "prof_new_device"), ("Nơi lạ", "prof_new_location"), ("IP lạ", "prof_new_ip"),
+                                     ("Kênh lạ", "prof_new_channel")] if int(getattr(r, k, 0) or 0) == 1]
+            rows.append({"i": i, "id": f'<span class="mono">{e(r.transaction_id)}</span>',
+                         "t": f"{pd.Timestamp(r.datetime):%d/%m %H:%M}", "c": e(r.customer_id),
+                         "a": n0(r.amount), "x": f"{r.amt_ratio:.1f}×".replace(".", ","),
+                         "k": e(FRAUD_VN.get(r.fraud_type, r.fraud_type)),
+                         "s": d(r.score, 3), "th": d(r.thr_fold, 3) if has_fold else "–",
+                         "kq": f'<span class="ev-pill" style="background:{bg};color:{fg}">{e(r.ket_qua)}</span>',
+                         "dg": f'<span style="color:{"#2F9E44" if ok_ else "#C92A2A"};font-weight:700">{e(r.danh_gia)}</span>',
+                         "sg": "".join(f'<span class="if-chip">{e(c)}</span>' for c in chips) or
+                               '<span style="color:#98A2B3">không có dấu hiệu rõ</span>'})
+        table(rows, [("i", "#"), ("id", "Mã giao dịch"), ("t", "Thời gian"), ("c", "Khách"), ("a", "Số tiền (₫)"),
+                     ("x", "Gấp mức nền"), ("k", "Kiểu gian lận"), ("s", "Điểm ngoài mẫu"), ("th", "Ngưỡng tạm giữ"),
+                     ("kq", "Kết quả"), ("dg", "Đánh giá"), ("sg", "Luật bật / dấu hiệu")],
+              num_cols=("i", "a", "x", "s", "th"), raw_cols=("id", "kq", "dg", "sg"))
+        st.caption("Ngưỡng tạm giữ là ngưỡng của đúng fold đã chấm giao dịch đó. Bấm vào thẻ Bắt đúng / Bỏ sót hoặc gõ mã "
+                   "vào trợ lý để xem giải thích chi tiết từng giao dịch.")
+
+
 def eval_overview(res, b):
     rep, lv = res["report"], res["lab_view"]
     cnt = {k: v for k, v in rep["labeled_counts"].items() if k != "NORMAL"}
     A = rep["detected_by_type"]["Gộp 3 tầng – có hồ sơ (B, chính thức)"]
     B = rep["kpi"]["intervene_by_type"]
     types = sorted(cnt, key=lambda t: -A.get(t, 0) / cnt[t])
+    eval_fraud_list(res)
     c1, c2 = st.columns([1.3, 1], gap="medium")
     with c1, card("ev_types"):
         title("Kết quả theo kiểu gian lận", "Tạm giữ = HIGH/CRITICAL · Can thiệp = tạm giữ hoặc xác thực thêm (MEDIUM) · "
