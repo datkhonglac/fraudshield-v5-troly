@@ -222,7 +222,7 @@ padding:2px 9px;border-radius:999px}
 [class*="st-key-card_db4"] .fs-tw,[class*="st-key-card_ev_fraudlist"] .fs-tw{max-height:560px;overflow:auto}
 [class*="st-key-card_ev_fraudlist"] .fs-table th{position:sticky;top:0;z-index:1}
 .thr-lab{font-size:13px;font-weight:600;color:#344054;margin:4px 0 -6px}
-[class*="st-key-thr_"] input{font-size:18px!important;font-weight:700;color:#0B1F45}
+[class*="st-key-thr_"] input,[class*="st-key-thrm_"] input,[class*="st-key-thrc_"] input{font-size:18px!important;font-weight:700;color:#0B1F45}
 .ev-pill{font-size:11.5px;font-weight:700;border-radius:6px;padding:2px 8px;white-space:nowrap}
 [class*="st-key-card_db4"] .fs-table th{position:sticky;top:0;z-index:1}
 .if-chip{display:inline-block;font-size:11.5px;background:#FFF4E6;color:#B4540A;border:1px solid #FFD8A8;border-radius:20px;
@@ -2445,42 +2445,70 @@ def eval_compare(rep):
 
 def eval_threshold(res):
     rep, df, lv = res["report"], res["df"], res["lab_view"]
+    rid = res["rid"]
+    kt, km, kc = f"thr_{rid}", f"thrm_{rid}", f"thrc_{rid}"
+    T0, M0, C0 = float(rep["threshold"]), float(rep["medium_threshold"]), float(F.COST_FN / F.COST_FP)
+    for k, v in ((kt, T0), (km, M0), (kc, C0)):
+        if k not in st.session_state:
+            st.session_state[k] = v
     with card("thr"):
         title("Thử thay đổi ngưỡng cảnh báo",
-              "Nhập ngưỡng (0,05 – 0,99) hoặc chọn một mốc có sẵn để thấy đánh đổi giữa bắt được nhiều gian lận và "
-              "báo nhầm. Điểm dùng ở đây là điểm "
-              "out-of-fold tại một ngưỡng cố định nên có thể chênh nhẹ so với bảng so sánh (ngưỡng lồng).")
-        key = f"thr_{res['rid']}"
-        cost = rep["cost_threshold"]["threshold"]
-        if key not in st.session_state:
-            st.session_state[key] = float(rep["threshold"])
-        H('<div class="fs thr-lab">Ngưỡng tạm giữ</div>')
-        c0, b1, b2, b3 = st.columns([0.9, 1, 1.15, 1.3], vertical_alignment="bottom")
-        with c0:
-            t = st.number_input("Ngưỡng tạm giữ", min_value=0.05, max_value=0.99, step=0.01, format="%.4f", key=key,
-                                label_visibility="collapsed",
-                                help="Gõ số rồi nhấn Enter; nút +/− đổi mỗi lần 0,01")
-        t = float(t if t is not None else (st.session_state.get(key) or rep["threshold"]))
-        b1.button(f"Ngưỡng chặn · {d(rep['threshold'], 4)}", width="stretch", key=f"pf_{res['rid']}",
-                  on_click=lambda: st.session_state.update({key: float(rep["threshold"])}))
-        b2.button(f"Ngưỡng xác thực thêm · {d(rep['medium_threshold'], 4)}", width="stretch", key=f"pm_{res['rid']}",
-                  on_click=lambda: st.session_state.update({key: float(rep["medium_threshold"])}))
-        b3.button(f"Theo chi phí (bỏ sót = 10 × báo nhầm) · {d(cost, 4)}", width="stretch", key=f"pc_{res['rid']}",
-                  on_click=lambda: st.session_state.update({key: float(cost)}))
-        y, s = lv.y.values, lv.score.values
-        pred = s >= t
-        tp, fp, fn = int((pred & (y == 1)).sum()), int((pred & (y == 0)).sum()), int((~pred & (y == 1)).sum())
+              "Nhập ngưỡng tạm giữ, ngưỡng xác thực thêm và tỷ lệ chi phí rồi nhấn Enter để thấy đánh đổi giữa bắt được "
+              "nhiều gian lận và báo nhầm. Điểm dùng ở đây là điểm out-of-fold tại một ngưỡng cố định nên có thể chênh "
+              "nhẹ so với bảng so sánh (ngưỡng lồng).")
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            t = st.number_input(f"Ngưỡng tạm giữ (HIGH) · mặc định {d(T0, 4)}", min_value=0.05, max_value=0.99, step=0.01,
+                                format="%.4f", key=kt, help="Điểm từ ngưỡng này trở lên bị tạm giữ chờ chuyên viên")
+        with c2:
+            m = st.number_input(f"Ngưỡng xác thực thêm (MEDIUM) · mặc định {d(M0, 4)}", min_value=0.01, max_value=0.99,
+                                step=0.01, format="%.4f", key=km, help="Điểm từ ngưỡng này đến dưới ngưỡng tạm giữ phải "
+                                "xác thực thêm (OTP, sinh trắc)")
+        with c3:
+            n_cost = st.number_input(f"Chi phí: 1 ca bỏ sót = ? ca báo nhầm · mặc định {d(C0, 0)}", min_value=1.0,
+                                     max_value=100.0, step=1.0, format="%.0f", key=kc,
+                                     help="Một ca gian lận bị lọt thiệt hại bằng bao nhiêu ca khách thật bị giữ nhầm")
+        ss = st.session_state
+        t = float(t if t is not None else (ss.get(kt) or T0)); m = float(m if m is not None else (ss.get(km) or M0))
+        n_cost = float(n_cost if n_cost is not None else (ss.get(kc) or C0))
+        if m >= t:
+            st.warning("Ngưỡng xác thực thêm phải nhỏ hơn ngưỡng tạm giữ – đang tính như bằng ngưỡng tạm giữ.",
+                       icon=":material/warning:")
+            m = t
+        x = lv.merge(df[["transaction_id", "ctx_score"]], on="transaction_id", how="left")
+        y, s = x.y.values, x.score.values
+        ctx_thr = (rep.get("context_layer") or {}).get("threshold")
+        door = (x.ctx_score.fillna(0).values > ctx_thr) if ctx_thr is not None else np.zeros(len(x), bool)
+        hold = s >= t
+        itv = hold | (s >= m) | door
+        tp, fp, fn = int((hold & (y == 1)).sum()), int((hold & (y == 0)).sum()), int((~hold & (y == 1)).sum())
         P = tp / max(1, tp + fp); R = tp / max(1, tp + fn); F1 = 2 * P * R / max(1e-9, P + R)
+        nf, nl = int((y == 1).sum()), int((y == 0).sum())
+        itp = int((itv & (y == 1)).sum()); step = int((itv & ~hold & (y == 0)).sum())
+        cost_now = n_cost * fn + fp
+        t_best = F.cost_threshold(y, s, n_cost, 1.0)
+        hb = s >= t_best
+        cost_best = n_cost * int((~hb & (y == 1)).sum()) + int((hb & (y == 0)).sum())
         kgrid([kcard(d(P), "Precision", BLUE), kcard(d(R), "Recall", GREEN), kcard(d(F1), "F1-score", PURPLE),
                kcard(f"{fn} / {fp}", "Bỏ sót / báo nhầm", LEVEL_COLOR["HIGH"],
                      f"{n0((df.risk_score >= t).sum())} cảnh báo trên {n0(len(df))} giao dịch")])
+        kgrid([kcard(f"{itp}/{nf}", "Gian lận bị can thiệp", GREEN, "bị tạm giữ hoặc phải xác thực thêm"),
+               kcard(n0(step), "Khách thật phải xác thực thêm", "#B08900", f"{pct(step / max(1, nl), 2)} trên {n0(nl)} giao dịch thật"),
+               kcard(n0(cost_now), "Chi phí tại ngưỡng tạm giữ", LEVEL_COLOR["HIGH"],
+                     f"= {d(n_cost, 0)} × {fn} bỏ sót + {fp} báo nhầm"),
+               kcard(d(t_best, 4), "Ngưỡng có chi phí thấp nhất", NAVY, f"chi phí {n0(cost_best)} với tỷ lệ {d(n_cost, 0)} : 1")])
+        b1, b2, _ = st.columns([1.2, 1, 2])
+        b1.button(f"Dùng ngưỡng chi phí thấp nhất · {d(t_best, 4)}", width="stretch", key=f"pc_{rid}",
+                  on_click=lambda: st.session_state.update({kt: float(t_best)}))
+        b2.button("Khôi phục mặc định", width="stretch", key=f"pr_{rid}", type="tertiary",
+                  icon=":material/restart_alt:", on_click=lambda: st.session_state.update({kt: T0, km: M0, kc: C0}))
         pr, rc, th = precision_recall_curve(y, s)
         fig = go.Figure()
         fig.add_scatter(x=rc, y=pr, mode="lines", line=dict(color=BLUE, width=2.5, shape="hv"), name="Đường PR",
                         hovertemplate="Recall %{x:.3f}<br>Precision %{y:.3f}<extra></extra>")
         fig.add_scatter(x=[R], y=[P], mode="markers", marker=dict(size=13, color=LEVEL_COLOR["HIGH"],
                                                                   line=dict(color="#fff", width=2)),
-                        name=f"Ngưỡng {d(t, 4)}", hovertemplate="Recall %{x:.3f}<br>Precision %{y:.3f}<extra></extra>")
+                        name=f"Ngưỡng tạm giữ {d(t, 4)}", hovertemplate="Recall %{x:.3f}<br>Precision %{y:.3f}<extra></extra>")
         style(fig, 330, xaxis=dict(title="Recall", range=[0, 1.02]), yaxis=dict(title="Precision", range=[0, 1.04]))
         chart(fig, "pr")
 
