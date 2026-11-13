@@ -41,8 +41,8 @@ Q = [
      "đợt tấn công. Xử lý theo hồ sơ giúp chuyên viên kết luận một lần cho cả chuỗi thay vì từng giao dịch lẻ.", "cases"),
     ("B02", "Hàng đợi hồ sơ", "CRITICAL, HIGH, MEDIUM, LOW khác nhau thế nào?",
      "các mức rủi ro|critical là gì|high là gì|medium là gì|low là gì|mức độ cảnh báo",
-     "**CRITICAL**: điểm vượt ngưỡng chặn và có dấu hiệu thử sai/dồn dập (R5 hoặc R6) – tạm dừng, gọi xác minh ngay, SLA 5 phút. "
-     "**HIGH**: vượt ngưỡng chặn – tạm dừng, chuyên viên kiểm tra, SLA 2 giờ. **MEDIUM**: không chặn, khách phải "
+     "**CRITICAL**: điểm vượt ngưỡng chặn và có dấu hiệu thử sai/dồn dập (R5 hoặc R6) – chặn, gọi xác minh ngay, SLA 5 phút. "
+     "**HIGH**: vượt ngưỡng chặn – chặn, chuyên viên kiểm tra, SLA 2 giờ. **MEDIUM**: không chặn, khách phải "
      "xác thực thêm (OTP/sinh trắc học). **LOW**: cho qua.", ""),
     ("B03", "Hàng đợi hồ sơ", "SLA là gì?",
      "sla 5 phút|sla 2 giờ|thời hạn xử lý|cột sla nghĩa là gì",
@@ -87,7 +87,7 @@ Q = [
     ("C01", "Giám sát thời gian thực", "Trang Giám sát thời gian thực hoạt động thế nào?",
      "thời gian thực là gì|giao dịch đến như thế nào|luồng thời gian thực|real time",
      "Khi khách bấm thanh toán trên ứng dụng FS Pay, giao dịch được gửi về hệ thống, chấm điểm ngay (dưới 1 ms) và hiện "
-     "trên màn hình giám sát. Giao dịch bị tạm giữ vào thẻ **Cần xử lý ngay** để giám sát viên quyết định.", "live"),
+     "trên màn hình giám sát. Giao dịch bị chặn vào thẻ **Cần xử lý ngay** để giám sát viên quyết định.", "live"),
     ("C02", "Giám sát thời gian thực", "Chặn, Huỷ và Xác thực khác nhau thế nào?",
      "nút chặn|nút huỷ|nút xác thực|chặn hay huỷ|xác thực là gì",
      "**Chặn**: từ chối giao dịch. **Huỷ**: huỷ giao dịch và hoàn tiền cho khách. **Xác thực**: đã gọi xác minh với "
@@ -98,7 +98,7 @@ Q = [
      "Mở **FS Pay** (nút ở cuối menu), gửi một giao dịch, hoặc chọn tốc độ phát **bộ 1.000 giao dịch mẫu** ở bảng điều khiển.", "live"),
     ("C04", "Giám sát thời gian thực", "Điểm màu vàng nằm dưới đường ngưỡng trên biểu đồ là gì?",
      "điểm vàng dưới đường|biểu đồ điểm|đường đỏ đường vàng|hai đường ngưỡng",
-     "Đường đỏ là ngưỡng tạm giữ, đường chấm vàng là ngưỡng xác thực thêm. Điểm vàng nằm **dưới** đường vàng là giao "
+     "Đường đỏ là ngưỡng chặn, đường chấm vàng là ngưỡng xác thực thêm. Điểm vàng nằm **dưới** đường vàng là giao "
      "dịch điểm thấp nhưng **lớp ngữ cảnh** thấy lệch mạnh so với thói quen của chính khách, nên vẫn bắt xác thực thêm.", "live"),
     ("C05", "Giám sát thời gian thực", "Thẻ Đối chiếu bộ mẫu là gì, có phải độ chính xác của mô hình không?",
      "đối chiếu bộ mẫu|bộ 1000 giao dịch|gian lận lọt|kịch bản bộ mẫu",
@@ -142,8 +142,8 @@ Q = [
      "Điểm rủi ro = 0,6 × hồi quy logistic + 0,3 × hệ luật + 0,1 × Isolation Forest, nằm trong khoảng 0–1. Trong trợ lý, chế "
      "độ **Giải thích hồ sơ đang xem**, gõ mã giao dịch để xem bảng điểm gốc × trọng số = đóng góp của từng phần.", ""),
     ("E03", "Tổng quan", "Ngưỡng chặn và ngưỡng xác thực thêm là bao nhiêu?",
-     "ngưỡng là bao nhiêu|0,68|0,43|ngưỡng tạm giữ|ngưỡng cảnh báo",
-     "Với Data Pack BTC: điểm từ **0,6847** trở lên bị tạm giữ (HIGH/CRITICAL); từ **0,4349** đến dưới đó phải xác thực "
+     "ngưỡng là bao nhiêu|0,68|0,43|ngưỡng chặn|ngưỡng cảnh báo",
+     "Với Data Pack BTC: điểm từ **0,6847** trở lên bị chặn (HIGH/CRITICAL); từ **0,4349** đến dưới đó phải xác thực "
      "thêm (MEDIUM). Ngưỡng được chọn tự động trong kiểm định chéo, không đặt tay.", "ev_kpi"),
     ("E04", "Tổng quan", "Tải danh sách giao dịch ra Excel được không?",
      "xuất excel|tải csv|download giao dịch|tải xuống danh sách",
@@ -171,7 +171,7 @@ Q = [
      "2345/QĐ-NHNN về xác thực sinh trắc học, Nghị định 52/2024 và các thông tư về an toàn thiết bị.", ""),
     ("F04", "Mô hình & kiểm định", "Ngưỡng xác thực thêm 0,4349 được chọn thế nào?",
      "ngưỡng 0,4349|ngưỡng xác thực thêm|ngưỡng medium|0,4349|ngưỡng otp|recall can thiệp",
-     "Là ngưỡng **cao nhất** vẫn đưa ít nhất **91% gian lận** trên dữ liệu học vào diện tạm giữ hoặc xác thực thêm, với điều kiện **không quá 5% khách thật** phải xác thực thêm. 91% × 128 → gian lận thứ 117, có RiskScore 0,4349 (TXN004744); giới hạn 5% khách thật ứng với 0,3005 nên không bị chạm. Kiểm định 5-fold: 120/128 gian lận bị tạm giữ hoặc xác thực thêm, 3,74% khách thật phải nhập OTP.", "ev_kpi"),
+     "Là ngưỡng **cao nhất** vẫn đưa ít nhất **91% gian lận** trên dữ liệu học vào diện chặn hoặc xác thực thêm, với điều kiện **không quá 5% khách thật** phải xác thực thêm. 91% × 128 → gian lận thứ 117, có RiskScore 0,4349 (TXN004744); giới hạn 5% khách thật ứng với 0,3005 nên không bị chạm. Kiểm định 5-fold: 120/128 gian lận bị chặn hoặc xác thực thêm, 3,74% khách thật phải nhập OTP.", "ev_kpi"),
     ("F05", "Mô hình & kiểm định", "Mô hình có bắt được kiểu gian lận mới không?",
      "gian lận kiểu mới|kiểu chưa từng thấy|ẩn từng kiểu|loto|novelty",
      "Có kiểm chứng bằng thí nghiệm **ẩn từng kiểu**: bỏ hẳn nhãn của một kiểu khỏi dữ liệu học rồi xem hệ thống còn bắt "
@@ -200,8 +200,8 @@ Q = [
      "xác thực thêm (không bị chặn). Danh sách cụ thể ở **Kiểm định → Bắt sai**.", "ev_kpi"),
     ("F11", "Mô hình & kiểm định", "Thay đổi ngưỡng thì kết quả thay đổi ra sao?",
      "độ nhạy ngưỡng|kéo ngưỡng|đổi ngưỡng|đường pr",
-     "Xem **Kiểm định → Có hiệu chỉnh được không?**: hạ ngưỡng tạm giữ thì bắt được nhiều gian lận hơn nhưng số khách "
-     "thật bị giữ nhầm tăng nhanh (ví dụ tạm giữ 114/128 thì bắt sai 26 giao dịch). Ngưỡng dùng thật vẫn chọn tự động.", "ev_kpi"),
+     "Xem **Kiểm định → Có hiệu chỉnh được không?**: hạ ngưỡng chặn thì bắt được nhiều gian lận hơn nhưng số khách "
+     "thật bị giữ nhầm tăng nhanh (ví dụ chặn 114/128 thì bắt sai 26 giao dịch). Ngưỡng dùng thật vẫn chọn tự động.", "ev_kpi"),
     ("F12", "Mô hình & kiểm định", "Mô hình có thiên vị nhóm khách hay địa phương nào không?",
      "công bằng|thiên vị|fairness|phân khúc khách",
      "Mô hình không dùng phân khúc khách hay nơi ở làm đặc trưng trực tiếp. Nhóm có theo dõi tỉ lệ cảnh báo theo phân khúc "

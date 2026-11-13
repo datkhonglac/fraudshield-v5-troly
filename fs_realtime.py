@@ -28,8 +28,8 @@ def _average_path_length(n):
     out[m] = 2.0 * (np.log(n[m] - 1.0) + np.euler_gamma) - 2.0 * (n[m] - 1.0) / n[m]
     return out
 
-ACTIONS = {"CRITICAL": "Tạm dừng giao dịch, gọi xác minh ngay",
-           "HIGH": "Tạm dừng, chuyên viên kiểm tra trong ca",
+ACTIONS = {"CRITICAL": "Chặn giao dịch, gọi xác minh ngay",
+           "HIGH": "Chặn, chuyên viên kiểm tra trong ca",
            "MEDIUM": "Yêu cầu xác thực thêm (OTP/sinh trắc học)",
            "LOW": "Cho qua"}
 

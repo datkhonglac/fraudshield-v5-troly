@@ -48,12 +48,12 @@ def main(out):
     # 2. Bảng KPI, ma trận nhầm lẫn, recall theo kiểu, baseline, top-k
     n_fr = int(res["lab_view"].y.sum())
     n_ok = len(res["lab_view"]) - n_fr
-    kpi = [("Precision (tạm giữ)", b["precision"], "TP/(TP+FP)", "≥ 0,90"),
-           ("Recall tạm giữ", b["recall"], "TP/(TP+FN)", "≥ 0,80 (BTC)"),
-           ("Recall can thiệp", k["intervene_recall"], "(tạm giữ + xác thực thêm)/128", "≥ 0,90"),
+    kpi = [("Precision (chặn)", b["precision"], "TP/(TP+FP)", "≥ 0,90"),
+           ("Recall chặn", b["recall"], "TP/(TP+FN)", "≥ 0,80 (BTC)"),
+           ("Gian lận bị can thiệp", k["intervene_recall"], "(chặn + xác thực thêm)/128", "≥ 0,90"),
            ("F1", b["f1"], "2PR/(P+R)", "≥ 0,75 (BTC)"),
            ("PR-AUC", b["pr_auc"], "average precision", "tham khảo"),
-           ("FPR tạm giữ", b["fp"] / n_ok, "FP/1.872", "tham khảo"),
+           ("FPR chặn", b["fp"] / n_ok, "FP/1.872", "tham khảo"),
            ("Khách thật phải xác thực thêm", k["stepup_legit_rate"], "MEDIUM thật/1.872", "≤ 5%"),
            ("Can thiệp khi ẩn từng kiểu", rep["loto"][-1]["medium_plus"] / rep["loto"][-1]["n"], "ca can thiệp/128", "≥ 0,90")]
     csv(pd.DataFrame(kpi, columns=["kpi", "ket_qua", "cong_thuc", "muc_tieu"]), out / "kpi_summary.csv")

@@ -69,7 +69,7 @@ CTX_SPEC = [("amt_ratio", 1), ("prof_amt_z", 1), ("c_amt_over_max", 1), ("n_txn_
             ("auth_none", 1), ("dev_compromised", 1), ("dev_shared", 1), ("prof_new_device", 1),
             ("prof_new_location", 1), ("prof_new_ip", 1)]
 CTX_FILL = {"dev_age_days": 9999.0}
-ACTIONS = {"CRITICAL": "Tạm dừng giao dịch, gọi xác minh ngay", "HIGH": "Tạm dừng, chuyên viên kiểm tra trong ca",
+ACTIONS = {"CRITICAL": "Chặn giao dịch, gọi xác minh ngay", "HIGH": "Chặn, chuyên viên kiểm tra trong ca",
            "MEDIUM": "Yêu cầu xác thực thêm (OTP/sinh trắc học)", "LOW": "Cho qua"}
 COST_FN, COST_FP = 10, 1
 F_BASE = ["amt_ratio", "dev_not_registered_to_cust", "dev_age_days", "dev_is_new", "loc_mismatch", "ip_foreign",
