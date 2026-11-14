@@ -4044,7 +4044,7 @@ def assistant(res):
 
 
 AS_CSS = """<style>
-.st-key-as_fab,.st-key-as_fab_open{position:fixed!important;right:18px;bottom:10px;z-index:1001;width:auto!important;
+.st-key-as_fab,.st-key-as_fab_open{position:fixed!important;right:22px;bottom:96px;z-index:1001;width:auto!important;
 perspective:700px;gap:0!important}
 .st-key-as_fab::before,.st-key-as_fab_open::before{content:"";position:absolute;left:50%;top:46%;width:86px;height:86px;
 transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;
@@ -4075,7 +4075,7 @@ box-shadow:0 4px 10px rgba(11,31,69,.35)}
 @keyframes fsGlow{0%,100%{opacity:.75;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}}
 @media (prefers-reduced-motion:reduce){.st-key-as_fab *,.st-key-as_fab_open *,.st-key-as_fab::before,.st-key-as_fab::after,
 .st-key-as_fab_open::before,.st-key-as_fab_open::after{animation:none!important}}
-.st-key-as_panel{position:fixed!important;right:18px;top:60px;bottom:118px;
+.st-key-as_panel{position:fixed!important;right:18px;top:60px;bottom:204px;
 width:calc((100vw - 22rem) / 2 - 18px)!important;min-width:min(450px, calc(100vw - 32px));max-width:calc(100vw - 32px);
 overflow-y:auto;z-index:1000;background:#fff;border:1px solid #D6DEEA;border-radius:18px;
 box-shadow:0 18px 50px rgba(11,37,82,.22);gap:0!important;padding:0!important}
