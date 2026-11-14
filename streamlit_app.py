@@ -4003,8 +4003,9 @@ def as_guide(res):
 def assistant_body(res):
     if st.session_state.pop("as_go", False):
         st.rerun()
-    H('<div class="fs as-head"><div class="t">Trợ lý Fraud Shield</div><div class="s">Hướng dẫn sử dụng · giải thích hồ sơ · '
-      'hỗ trợ kỹ thuật</div><span class="lock">🔒 Chạy nội bộ · không gửi dữ liệu khách ra ngoài</span></div>')
+    H('<div class="fs as-head"><div class="av"></div><div class="tx"><div class="t">Trợ lý Fraud Shield</div><div class="s">'
+      'Hướng dẫn sử dụng · giải thích hồ sơ · hỗ trợ kỹ thuật</div><span class="lock">🔒 Chạy nội bộ · không gửi dữ liệu '
+      'khách ra ngoài</span></div></div>')
     with st.container(key="as_body"):
         mode = st.pills("Chế độ", AS_MODES, default=AS_MODES[0], key="as_mode", label_visibility="collapsed") or AS_MODES[0]
         if mode == AS_MODES[0]:
@@ -4015,34 +4016,77 @@ def assistant_body(res):
             as_ticket(res)
 
 
+@st.cache_resource(show_spinner=False)
+def _robot_b64():
+    """Ảnh robot của trợ lý (đã tách nền), nhúng thẳng vào CSS."""
+    import base64
+    f = Path(__file__).parent / "assets" / "tro_ly_robot.png"
+    return base64.b64encode(f.read_bytes()).decode() if f.exists() else ""
+
+
 def _as_toggle():
     st.session_state.as_open = not st.session_state.get("as_open", False)
 
 
 def assistant(res):
     H(re.sub(r"\s*\n\s*", " ", AS_CSS))
+    b64 = _robot_b64()
+    if b64:
+        H("<style>.st-key-as_fab button,.st-key-as_fab_open button{background-image:url(data:image/png;base64," + b64 +
+          ")!important}.as-head .av{background-image:url(data:image/png;base64," + b64 + ")}</style>")
     is_open = st.session_state.get("as_open", False)
-    with st.container(key="as_fab"):
-        st.button("", icon=":material/close:" if is_open else ":material/chat:", key="as_toggle", on_click=_as_toggle,
-                  help="Trợ lý Fraud Shield")
+    with st.container(key="as_fab_open" if is_open else "as_fab"):
+        st.button("" if b64 else " ", icon=None if b64 else (":material/close:" if is_open else ":material/chat:"),
+                  key="as_toggle", on_click=_as_toggle, help="Đóng trợ lý" if is_open else "Trợ lý Fraud Shield")
     if is_open:
         with st.container(key="as_panel"):
             st.fragment(assistant_body)(res)
 
 
 AS_CSS = """<style>
-.st-key-as_fab{position:fixed!important;right:26px;bottom:22px;z-index:1001;width:auto!important}
-.st-key-as_fab button{width:60px!important;height:60px!important;min-height:60px!important;border-radius:50%!important;
-background:#1E56C8!important;color:#fff!important;border:0!important;box-shadow:0 10px 26px rgba(30,86,200,.45)!important}
-.st-key-as_fab button span,.st-key-as_fab button p{color:#fff!important;font-size:28px!important}
-.st-key-as_panel{position:fixed!important;right:18px;top:60px;bottom:94px;
+.st-key-as_fab,.st-key-as_fab_open{position:fixed!important;right:18px;bottom:10px;z-index:1001;width:auto!important;
+perspective:700px;gap:0!important}
+.st-key-as_fab::before,.st-key-as_fab_open::before{content:"";position:absolute;left:50%;top:46%;width:86px;height:86px;
+transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;
+background:radial-gradient(circle,rgba(94,180,255,.55) 0%,rgba(139,108,255,.28) 45%,rgba(139,108,255,0) 70%);
+animation:fsGlow 3.6s ease-in-out infinite}
+.st-key-as_fab::after,.st-key-as_fab_open::after{content:"";position:absolute;left:50%;bottom:-2px;width:62px;height:12px;
+transform:translateX(-50%);border-radius:50%;pointer-events:none;
+background:radial-gradient(ellipse at center,rgba(15,35,80,.38) 0%,rgba(15,35,80,0) 70%);animation:fsShadow 3.6s ease-in-out infinite}
+.st-key-as_fab [data-testid="stButton"],.st-key-as_fab_open [data-testid="stButton"]{animation:fsFloat 3.6s ease-in-out infinite;
+transform-style:preserve-3d}
+.st-key-as_fab button,.st-key-as_fab_open button{width:96px!important;height:96px!important;min-height:96px!important;
+padding:0!important;border:0!important;border-radius:50%!important;background-color:transparent!important;
+background-size:contain!important;background-repeat:no-repeat!important;background-position:center!important;
+box-shadow:none!important;transform-style:preserve-3d;transform:rotateY(-12deg) rotateX(6deg);
+animation:fsTilt 7.2s ease-in-out infinite;transition:transform .35s cubic-bezier(.2,.8,.2,1),filter .35s;
+filter:drop-shadow(0 12px 10px rgba(30,60,140,.30)) drop-shadow(0 2px 2px rgba(30,60,140,.25)) drop-shadow(0 0 12px rgba(90,170,255,.35))}
+.st-key-as_fab button:hover,.st-key-as_fab_open button:hover{animation:none;transform:rotateY(14deg) rotateX(-8deg) scale(1.1);
+filter:drop-shadow(0 18px 14px rgba(30,60,140,.35)) drop-shadow(0 0 18px rgba(110,190,255,.6))}
+.st-key-as_fab button:active,.st-key-as_fab_open button:active{transform:scale(.94)}
+.st-key-as_fab button:focus:not(:active),.st-key-as_fab_open button:focus:not(:active){border:0!important;box-shadow:none!important}
+.st-key-as_fab button p,.st-key-as_fab_open button p{display:none}
+.st-key-as_fab_open button::after{content:"×";position:absolute;right:2px;top:4px;width:26px;height:26px;border-radius:50%;
+background:#0B1F45;color:#fff;font-size:18px;line-height:24px;font-weight:700;text-align:center;
+box-shadow:0 4px 10px rgba(11,31,69,.35)}
+@keyframes fsFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes fsTilt{0%,100%{transform:rotateY(-14deg) rotateX(6deg)}50%{transform:rotateY(14deg) rotateX(-4deg)}}
+@keyframes fsShadow{0%,100%{transform:translateX(-50%) scale(1);opacity:.9}50%{transform:translateX(-50%) scale(.72);opacity:.5}}
+@keyframes fsGlow{0%,100%{opacity:.75;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}}
+@media (prefers-reduced-motion:reduce){.st-key-as_fab *,.st-key-as_fab_open *,.st-key-as_fab::before,.st-key-as_fab::after,
+.st-key-as_fab_open::before,.st-key-as_fab_open::after{animation:none!important}}
+.st-key-as_panel{position:fixed!important;right:18px;top:60px;bottom:118px;
 width:calc((100vw - 22rem) / 2 - 18px)!important;min-width:min(450px, calc(100vw - 32px));max-width:calc(100vw - 32px);
 overflow-y:auto;z-index:1000;background:#fff;border:1px solid #D6DEEA;border-radius:18px;
 box-shadow:0 18px 50px rgba(11,37,82,.22);gap:0!important;padding:0!important}
 .st-key-as_body{padding:10px 14px 12px!important;gap:8px!important}
 .stApp:has(section[data-testid="stSidebar"][aria-expanded="false"]) .st-key-as_panel{width:calc(50vw - 18px)!important}
 .st-key-as_panel .as-b{font-size:13.5px}.st-key-as_panel .as-sc table{font-size:12.5px}
-.as-head{background:#0B1F45;color:#fff;padding:14px 16px 12px;border-radius:18px 18px 0 0}
+.as-head{background:linear-gradient(135deg,#0B1F45 0%,#16357A 100%);color:#fff;padding:12px 16px 12px;border-radius:18px 18px 0 0;
+display:flex;align-items:center;gap:12px}
+.as-head .av{flex:0 0 64px;height:64px;background-size:contain;background-repeat:no-repeat;background-position:center;
+filter:drop-shadow(0 6px 8px rgba(0,0,0,.35)) drop-shadow(0 0 10px rgba(110,190,255,.45));animation:fsFloat 3.6s ease-in-out infinite}
+.as-head .tx{min-width:0}
 .as-head .t{font-size:15px;font-weight:800}
 .as-head .s{font-size:11.5px;color:#A9B8D6;margin-top:2px}
 .as-head .lock{display:inline-block;margin-top:8px;font-size:11.5px;font-weight:700;color:#0B2552;background:#8CE99A;
