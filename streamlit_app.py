@@ -29,7 +29,6 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-from sklearn.metrics import precision_recall_curve
 
 import fraud_core as F
 import fs_realtime as RT
@@ -2489,15 +2488,6 @@ def eval_threshold(res):
                kcard(d(F1), "F1-score", PURPLE),
                kcard(f"{fn} / {fp}", "Bỏ sót / báo nhầm", LEVEL_COLOR["HIGH"],
                      f"chạy thật trên {n0(len(df))} giao dịch: {n0((rs >= t).sum())} chặn · {n0(n_med.sum())} xác thực thêm")])
-        pr, rc, th = precision_recall_curve(y, s)
-        fig = go.Figure()
-        fig.add_scatter(x=rc, y=pr, mode="lines", line=dict(color=BLUE, width=2.5, shape="hv"), name="Đường PR",
-                        hovertemplate="Recall %{x:.3f}<br>Precision %{y:.3f}<extra></extra>")
-        fig.add_scatter(x=[R], y=[P], mode="markers", marker=dict(size=13, color=LEVEL_COLOR["HIGH"],
-                                                                  line=dict(color="#fff", width=2)),
-                        name=f"Ngưỡng chặn {d(t, 4)}", hovertemplate="Recall %{x:.3f}<br>Precision %{y:.3f}<extra></extra>")
-        style(fig, 330, xaxis=dict(title="Recall", range=[0, 1.02]), yaxis=dict(title="Precision", range=[0, 1.04]))
-        chart(fig, "pr")
 
 
 def _nested_hold(y, s, fold):
