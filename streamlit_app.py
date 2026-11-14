@@ -221,6 +221,7 @@ padding:2px 9px;border-radius:999px}
 [class*="st-key-card_db4"] .fs-tw,[class*="st-key-card_ev_fraudlist"] .fs-tw{max-height:560px;overflow:auto}
 [class*="st-key-card_ev_fraudlist"] .fs-table th{position:sticky;top:0;z-index:1}
 .thr-lab{font-size:13px;font-weight:600;color:#344054;margin:4px 0 -6px}
+.wt-sum{display:inline-block;font-size:13px;font-weight:600;color:#067647;background:#ECFDF3;border:1px solid #ABEFC6;border-radius:999px;padding:4px 12px;margin:2px 0 10px}
 [class*="st-key-thr_"] input,[class*="st-key-thrm_"] input,[class*="st-key-thrc_"] input,[class*="st-key-wf_"] input{font-size:18px!important;font-weight:700;color:#0B1F45}
 .ev-pill{font-size:11.5px;font-weight:700;border-radius:6px;padding:2px 8px;white-space:nowrap}
 [class*="st-key-card_db4"] .fs-table th{position:sticky;top:0;z-index:1}
@@ -2549,7 +2550,7 @@ def eval_weights(res):
                 return ""
             v = a[k] - b[k]
             return "bằng mặc định" if abs(v) < 5e-4 else f"{'+' if v > 0 else '−'}{d(abs(v))} so với mặc định"
-        H('<div class="thr-lab">Tổng trọng số: <b>1,00</b> ✓</div>')
+        H('<div class="wt-sum">✓ Tổng trọng số: <b>1,00</b></div>')
         kgrid([kcard(d(a["P"]), "Precision", BLUE, f"{a['tp']} / {a['tp'] + a['fp']} cảnh báo là gian lận thật", delta("P")),
                kcard(d(a["R"]), "Recall", GREEN, f"{a['tp']} / {a['tp'] + a['fn']} gian lận bị chặn", delta("R")),
                kcard(d(a["F1"]), "F1-score", PURPLE, f"mặc định {d(b['F1'])}" if not same else "", delta("F1")),
