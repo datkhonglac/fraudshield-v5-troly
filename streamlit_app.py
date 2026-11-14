@@ -4072,7 +4072,10 @@ filter:drop-shadow(0 16px 14px rgba(30,60,140,.35)) drop-shadow(0 0 18px rgba(11
 border-radius:50%!important;border:1px solid rgba(255,255,255,.35)!important;background:rgba(255,255,255,.14)!important;
 box-shadow:none!important;transition:background .2s ease}
 .st-key-as_fab_open button:hover{background:rgba(255,255,255,.28)!important}
-.st-key-as_fab_open button::after{content:"×";color:#fff;font-size:22px;line-height:1;font-weight:600}
+.st-key-as_fab_open button{position:relative!important}
+.st-key-as_fab_open button>*{visibility:hidden}
+.st-key-as_fab_open button::after{content:"×";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+color:#fff;font-size:22px;line-height:1;font-weight:600;padding-bottom:2px;box-sizing:border-box}
 @keyframes fsFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
 @keyframes fsTilt{0%,100%{transform:rotateY(-14deg) rotateX(6deg)}50%{transform:rotateY(14deg) rotateX(-4deg)}}
 @keyframes fsShadow{0%,100%{transform:translateX(-50%) scale(1);opacity:.9}50%{transform:translateX(-50%) scale(.72);opacity:.5}}
