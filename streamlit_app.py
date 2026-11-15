@@ -4073,15 +4073,16 @@ filter:drop-shadow(0 16px 14px rgba(30,60,140,.35)) drop-shadow(0 0 18px rgba(11
 .st-key-as_fab button:active{scale:.95}
 .st-key-as_fab button:focus:not(:active),.st-key-as_fab_open button:focus:not(:active){border:0!important;box-shadow:none!important}
 .st-key-as_fab button p,.st-key-as_fab_open button p{display:none}
-.st-key-as_fab_open{position:fixed!important;top:74px;right:32px;z-index:1002;width:auto!important;gap:0!important}
-.st-key-as_fab_open button{width:34px!important;height:34px!important;min-height:34px!important;padding:0!important;
-border-radius:50%!important;border:1px solid rgba(255,255,255,.35)!important;background:rgba(255,255,255,.14)!important;
-box-shadow:none!important;transition:background .2s ease}
-.st-key-as_fab_open button:hover{background:rgba(255,255,255,.28)!important}
+.st-key-as_fab_open{position:fixed!important;bottom:14px;right:24px;z-index:1002;width:auto!important;gap:0!important}
+.st-key-as_fab_open button{width:52px!important;height:52px!important;min-height:52px!important;padding:0!important;
+border-radius:50%!important;border:0!important;background:#0B1F45!important;
+box-shadow:0 8px 20px rgba(11,37,82,.35)!important;transition:background .2s ease,scale .2s ease}
+.st-key-as_fab_open button:hover{background:#16357A!important;scale:1.06}
+.st-key-as_fab_open button:active{scale:.95}
 .st-key-as_fab_open button{position:relative!important}
 .st-key-as_fab_open button>*{visibility:hidden}
 .st-key-as_fab_open button::after{content:"×";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-color:#fff;font-size:22px;line-height:1;font-weight:600;padding-bottom:2px;box-sizing:border-box}
+color:#fff;font-size:30px;line-height:1;font-weight:500;padding-bottom:3px;box-sizing:border-box}
 @keyframes fsFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
 @keyframes fsTilt{0%,100%{transform:rotateY(-14deg) rotateX(6deg)}50%{transform:rotateY(14deg) rotateX(-4deg)}}
 @keyframes fsShadow{0%,100%{transform:translateX(-50%) scale(1);opacity:.9}50%{transform:translateX(-50%) scale(.72);opacity:.5}}
@@ -4095,7 +4096,7 @@ box-shadow:0 18px 50px rgba(11,37,82,.22);gap:0!important;padding:0!important}
 .stApp:has(section[data-testid="stSidebar"][aria-expanded="false"]) .st-key-as_panel{width:calc(50vw - 18px)!important}
 .st-key-as_panel .as-b{font-size:13.5px}.st-key-as_panel .as-sc table{font-size:12.5px}
 .as-head{background:linear-gradient(135deg,#0B1F45 0%,#16357A 100%);color:#fff;padding:12px 16px 12px;border-radius:18px 18px 0 0;
-display:flex;align-items:center;gap:12px;padding-right:62px!important}
+display:flex;align-items:center;gap:12px}
 .as-head .av{flex:0 0 64px;height:64px;background-size:contain;background-repeat:no-repeat;background-position:center;
 filter:drop-shadow(0 6px 8px rgba(0,0,0,.35)) drop-shadow(0 0 10px rgba(110,190,255,.45));animation:fsFloat 3.6s ease-in-out infinite}
 .as-head .tx{min-width:0}
