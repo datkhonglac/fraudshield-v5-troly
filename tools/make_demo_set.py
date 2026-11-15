@@ -3,7 +3,7 @@
 - Khách hàng, thói quen (máy, tỉnh, kênh, mức chi) lấy từ lịch sử Data Pack BTC để giao dịch "giống thật".
 - Giao dịch là HƯ CẤU, do nhóm tạo theo kịch bản; diễn ra sau thời điểm cuối của dữ liệu BTC.
 - Có thêm vài ca khó phía khách thật (đổi máy mới, đi nước ngoài, mua món rất lớn, sai OTP rồi làm lại, chuyển tiền
-  gia đình) theo tần suất trong dữ liệu BTC, để bảng đối chiếu phản ánh cả báo nhầm.
+  gia đình) để minh hoạ báo nhầm trên luồng; số lượng mang tính trình diễn, không đại diện tỷ lệ thực tế.
 - Cột `scenario` và `is_fraud_sim` là kịch bản nhóm cài vào – dùng để đối chiếu khi demo, KHÔNG dùng để đánh giá mô hình.
 Chạy: python tools/make_demo_set.py  →  data_demo/fs_pay_demo_1000.csv
 """
@@ -165,11 +165,10 @@ for i in range(N_NEWCHAN):     # đổi kênh thanh toán
     add(c, free_time(c), rng.choice(LOW_M), p["avg"] * rng.lognormal(0, 0.3), p["dev"], p["home"],
         chan=rng.choice(other), scen="Bình thường – thử kênh mới")
 
-# ---------------- ca khó phía khách THẬT: hành vi hợp lệ nhưng giống gian lận, để bảng đối chiếu có báo nhầm thật.
-# Số ca mỗi loại = tần suất của hành vi đó trong 1.872 giao dịch thật có nhãn của BTC × 911, tối thiểu 2 ca mỗi loại
-# (máy mới 0,32% → 3 · IP nước ngoài 0% → 2 · số tiền ≥ 6 lần 0,48% → 4 · sai OTP rồi làm lại ngay 0% → 2 ·
-#  chuyển tiền 3–5 lần 0,21% → 2). Không chọn số ca theo kết quả mong muốn.
-for i in range(3):            # đổi điện thoại mới: máy mới, xác thực OTP, ở nhà, số tiền bình thường
+# ---------------- ca khó phía khách THẬT: hành vi hợp lệ nhưng giống gian lận, mỗi loại vài ca để minh hoạ trên luồng.
+# Số lượng mang tính trình diễn, KHÔNG đại diện tỷ lệ thực tế. Đo báo nhầm khách quan: trang Kiểm định (2.000 nhãn BTC)
+# và bộ kiểm thử độc lập 5.000 giao dịch có nhiều ca khó.
+for i in range(1):            # đổi điện thoại mới: máy mới, xác thực OTP, ở nhà, số tiền bình thường
     c = CUSTS[int(rng.integers(len(CUSTS)))]; p = prof[c]
     add(c, free_time(c), rng.choice(p["mers"]), p["avg"] * rng.lognormal(0, 0.3), new_dev("NEW"), p["home"],
         scen="Bình thường (ca khó) – đổi điện thoại mới", new_device=True)
@@ -177,11 +176,11 @@ for i in range(2):            # đi nước ngoài thật: máy quen, IP nước
     c = CUSTS[int(rng.integers(len(CUSTS)))]; p = prof[c]
     add(c, free_time(c), rng.choice(mc[mc.merchant_category.isin(["HOTEL", "DINING", "TRAVEL"]) & (mc.merchant_risk_level != "HIGH")].merchant_id.tolist()),
         p["avg"] * rng.uniform(1, 2.5), p["dev"], p["home"], ip=rng.choice(FOREIGN), scen="Bình thường (ca khó) – đi nước ngoài")
-for i in range(4):            # mua món rất lớn hợp lệ: máy quen, ở nhà, gấp 6–10 lần
+for i in range(1):            # mua món rất lớn hợp lệ: máy quen, ở nhà, gấp 6–10 lần
     c = CUSTS[int(rng.integers(len(CUSTS)))]; p = prof[c]
     add(c, free_time(c), rng.choice(ELEC_M), p["avg"] * rng.uniform(6, 10), p["dev"], p["home"],
         scen="Bình thường (ca khó) – mua món rất lớn")
-for i in range(2):            # quên mã: nhập sai OTP 1 lần rồi đúng, máy quen
+for i in range(1):            # quên mã: nhập sai OTP 1 lần rồi đúng, máy quen
     c = CUSTS[int(rng.integers(len(CUSTS)))]; p = prof[c]; t = free_time(c); a = p["avg"] * rng.lognormal(0, 0.3)
     for k in range(2):
         add(c, t + pd.Timedelta(seconds=40 * k), rng.choice(p["mers"]), a, p["dev"], p["home"],
