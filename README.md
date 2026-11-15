@@ -93,7 +93,7 @@ Repo private thì app mặc định cũng private. Trong app bấm **Share** (g�
 ## Lưu ý
 
 - App không có người dùng 12 giờ sẽ "ngủ"; người mở bấm **Yes, get this app back up!** và chờ khoảng 1 phút.
-  Nên tự mở link trước khi gửi giáo viên / giám khảo.
+  Nên tự mở link trước khi gửi giám khảo.
 - Sửa code trên GitHub → app tự cập nhật sau ít phút.
 - Điền tên đội: sửa dòng `TEAM_NAME = ""` đầu tệp `streamlit_app.py`.
 - Nhật ký quyết định chỉ lưu trong phiên đang mở – tải `audit_log.csv` ở tab **Tải kết quả** trước khi đóng.
