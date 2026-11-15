@@ -59,10 +59,10 @@ def main(out):
     csv(pd.DataFrame(kpi, columns=["kpi", "ket_qua", "cong_thuc", "muc_tieu"]), out / "kpi_summary.csv")
     tn = n_ok - b["fp"]
     csv(pd.DataFrame([["Gian lận", b["tp"], b["fn"]], ["Bình thường", b["fp"], tn]],
-                     columns=["thuc_te", "du_doan_tam_giu", "du_doan_khong_tam_giu"]), out / "confusion_matrix.csv")
+                     columns=["thuc_te", "du_doan_chan", "du_doan_khong_chan"]), out / "confusion_matrix.csv")
     cnt = {t: v for t, v in rep["labeled_counts"].items() if t != "NORMAL"}
     A, I = rep["detected_by_type"][B], k["intervene_by_type"]
-    csv(pd.DataFrame([{"kieu": FRAUD_VN.get(t, t), "so_ca": n, "tam_giu": A.get(t, 0), "recall_tam_giu": A.get(t, 0) / n,
+    csv(pd.DataFrame([{"kieu": FRAUD_VN.get(t, t), "so_ca": n, "chan": A.get(t, 0), "recall_chan": A.get(t, 0) / n,
                        "can_thiep": I.get(t, 0), "recall_can_thiep": I.get(t, 0) / n} for t, n in cnt.items()]),
         out / "recall_by_fraud_type.csv")
     csv(pd.DataFrame([{"phuong_phap": m, **{c: v.get(c) for c in ["recall", "precision", "f1", "pr_auc", "tp", "fp", "fn"]}}
@@ -94,8 +94,8 @@ def main(out):
     summary = {
         "thoi_gian_chay_giay": round(sec, 1), "du_lieu_hop_le": ok, "so_giao_dich": len(df),
         "muc_rui_ro": rep["risk_level_counts"], "so_ho_so": len(res["cases"]),
-        "nguong_tam_giu": rep["threshold"], "nguong_xac_thuc_them": rep["medium_threshold"],
-        "precision": b["precision"], "recall_tam_giu": b["recall"], "recall_can_thiep": k["intervene_recall"],
+        "nguong_chan": rep["threshold"], "nguong_xac_thuc_them": rep["medium_threshold"],
+        "precision": b["precision"], "recall_chan": b["recall"], "recall_can_thiep": k["intervene_recall"],
         "f1": b["f1"], "pr_auc": b["pr_auc"], "tp_fp_fn": [b["tp"], b["fp"], b["fn"]],
         "chay_luong_lech_diem": par["n_score_mismatch"], "chay_luong_lech_muc": par["n_level_mismatch"],
         "latency_tb_ms": par["latency_mean_ms"],

@@ -57,7 +57,7 @@ RULE_BASIS = {"flag_R1_strong": "TT17 dấu hiệu 6", "flag_R1_mild": "TT17 d�
               "flag_R6": "TT17 dấu hiệu 6 (tần suất)", "flag_R7": "TT17 sửa đổi bởi TT25/2025 – dấu hiệu 8",
               "flag_C1": "TT 50/2024, TT 77/2025", "flag_C2": "QĐ 2345"}
 CASE_GAP_S = 1800
-TARGET_INTERVENE = 0.91   # Recall can thiệp đặt trên dữ liệu học (biên an toàn 1 điểm để ngoài mẫu ≥ 90%)
+TARGET_INTERVENE = 0.91   # Tỷ lệ gian lận bị can thiệp đặt trên dữ liệu học (biên an toàn 1 điểm để ngoài mẫu ≥ 90%)
 STEPUP_CAP = 0.05         # tối đa 5% giao dịch thật phải xác thực thêm
 NOV_BUDGET = 40           # hàng đợi nghi vấn mẫu mới: khoảng 40 ca cho cả kỳ
 CTX_BUDGET = 0.03         # cửa ngữ cảnh: tối đa ~3% giao dịch thật bị đưa sang xác thực thêm vì lệch ngữ cảnh
@@ -545,7 +545,7 @@ def fit_iso_ref(X, mask, n_ref=1001):
 
 
 def med_threshold(y, s, thr, target=None, cap=None):
-    """Ngưỡng tầng 'xác thực thêm': ngưỡng cao nhất giữ được Recall can thiệp ≥ target trên dữ liệu học,
+    """Ngưỡng tầng 'xác thực thêm': ngưỡng cao nhất giữ được tỷ lệ gian lận bị can thiệp ≥ target trên dữ liệu học,
     nhưng không để quá cap giao dịch thật phải xác thực thêm."""
     target = TARGET_INTERVENE if target is None else target
     cap = STEPUP_CAP if cap is None else cap
