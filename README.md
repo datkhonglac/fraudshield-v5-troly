@@ -31,7 +31,7 @@ Menu gồm 6 mục; bấm một mục để mở trang (riêng Dữ liệu & qu�
 
 | Mục menu | Mục con | Thẻ trong trang |
 |---|---|---|
-| **Tổng quan** | – | Dashboard (chỉ đếm trên 8.000 giao dịch): 1 Đã phân tích bao nhiêu → 2 Phát hiện bao nhiêu rủi ro → 3 Nguyên nhân → 4 Hàng đợi hồ sơ → 5 Giao dịch có điểm Isolation Forest cao (giao dịch bất thường ngoài nhóm bị chặn). Tra cứu mặc định xếp CRITICAL → HIGH → MEDIUM → LOW |
+| **Tổng quan** | – | Dashboard (chỉ đếm trên 8.000 giao dịch): 1 Đã phân tích bao nhiêu → 2 Phát hiện bao nhiêu rủi ro → 3 Nguyên nhân → 4 Hàng đợi giao dịch → 5 Giao dịch có điểm Isolation Forest cao (giao dịch bất thường ngoài nhóm bị chặn). Tra cứu mặc định xếp CRITICAL → HIGH → MEDIUM → LOW |
 | **Nhật ký xử lý** | – | – |
 | **Kiểm định** (2.000 giao dịch có nhãn) | – | Tổng hợp · Danh sách giao dịch có nhãn · Bắt đúng · Bỏ sót · Bắt sai · Thử đổi ngưỡng · Có hiệu chỉnh được không? |
 | **Giám sát thời gian thực** | – | Cần xử lý ngay · Biểu đồ điểm · Giao dịch đang đến · Đối chiếu bộ mẫu |
@@ -49,8 +49,8 @@ Nút tròn xanh ở góc dưới phải mở ô trợ lý, có 3 chế độ:
 - **Hỏi cách dùng** – trả lời từ bộ hỏi–đáp `tro_ly/hoi_dap.csv` (57 câu, mỗi câu kèm nhiều cách hỏi khác). Tìm câu gần
   nghĩa nhất bằng TF-IDF theo ký tự, gõ không dấu vẫn hiểu; câu trả lời có nút "Đi tới" trang liên quan. Không chắc
   thì gợi ý 3 câu gần nhất và nút gọi kỹ thuật.
-- **Giải thích hồ sơ đang xem** – diễn giải lý do mô hình đã sinh cho hồ sơ/giao dịch vừa mở, kèm gợi ý xử lý theo loại rủi ro.
-- **Gọi chuyên viên kỹ thuật** – tạo phiếu hỗ trợ (tự đính kèm trang và hồ sơ đang xem), ghi vào Nhật ký quyết định.
+- **Giải thích giao dịch đang xem** – diễn giải lý do mô hình đã sinh cho giao dịch/giao dịch vừa mở, kèm gợi ý xử lý theo loại rủi ro.
+- **Gọi chuyên viên kỹ thuật** – tạo phiếu hỗ trợ (tự đính kèm trang và giao dịch đang xem), ghi vào Nhật ký quyết định.
 
 **Không gọi dịch vụ AI bên ngoài**: mọi thứ chạy trong app, không dữ liệu khách nào rời hệ thống. Mã khách, số tài khoản,
 số điện thoại, email gõ vào ô hỏi được tự che. Sửa/thêm câu hỏi: mở `tro_ly/hoi_dap.csv` bằng Excel (giữ đúng 6 cột,

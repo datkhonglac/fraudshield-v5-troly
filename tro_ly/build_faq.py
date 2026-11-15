@@ -11,19 +11,19 @@ Q = [
     ("A01", "Bắt đầu", "Web này dùng để làm gì?",
      "fraud shield là gì|ứng dụng này làm gì|giới thiệu web|mục đích của app",
      "Fraud Shield là bảng điều khiển phát hiện gian lận thanh toán số. Hệ thống chấm điểm rủi ro từng giao dịch, "
-     "xếp vào 4 mức (CRITICAL, HIGH, MEDIUM, LOW), gom các giao dịch đáng ngờ của cùng khách thành hồ sơ để chuyên viên "
+     "xếp vào 4 mức (CRITICAL, HIGH, MEDIUM, LOW), gom các giao dịch đáng ngờ của cùng khách thành giao dịch để chuyên viên "
      "xử lý, và giám sát giao dịch mới theo thời gian thực từ ứng dụng khách FS Pay.", ""),
     ("A02", "Bắt đầu", "Tôi nên bắt đầu từ đâu?",
      "mới vào thì làm gì|hướng dẫn nhanh|bắt đầu sử dụng|lần đầu dùng",
-     "Mở **Tổng quan** (mục Tổng quan), kéo xuống mục 4 **Hàng đợi hồ sơ**, bấm chip **Khẩn cấp chưa xử lý** để thấy hồ sơ cần làm trước, "
-     "chọn một hồ sơ rồi đọc thẻ **Tóm tắt & kết luận** và ghi quyết định. Phần đầu Dashboard cho toàn cảnh 8.000 giao dịch.", "cases"),
+     "Mở **Tổng quan** (mục Tổng quan), kéo xuống mục 4 **Hàng đợi giao dịch**, bấm chip **Khẩn cấp chưa xử lý** để thấy giao dịch cần làm trước, "
+     "chọn một giao dịch rồi đọc thẻ **Tóm tắt & kết luận** và ghi quyết định. Phần đầu Dashboard cho toàn cảnh 8.000 giao dịch.", "cases"),
     ("A03", "Bắt đầu", "Menu bên trái được chia thế nào?",
      "các nhóm trong menu|menu có những gì|cấu trúc menu|tìm chức năng ở đâu",
-     "Menu có 6 mục, theo thứ tự: **Tổng quan** (dashboard kèm hàng đợi hồ sơ), **Nhật ký xử lý** (các quyết định đã ghi), **Kiểm định** (các chỉ số đánh giá mô hình), **Giám sát thời gian thực**, **Bắt gian lận mới** (kiểu gian lận chưa từng học) và **Dữ liệu & quản trị** (tải dữ liệu, tải kết quả, học lại). Bấm một mục để mở trang; riêng Dữ liệu & quản trị bấm để mở/đóng các mục con.", ""),
+     "Menu có 6 mục, theo thứ tự: **Tổng quan** (dashboard kèm hàng đợi giao dịch), **Nhật ký xử lý** (các quyết định đã ghi), **Kiểm định** (các chỉ số đánh giá mô hình), **Giám sát thời gian thực**, **Bắt gian lận mới** (kiểu gian lận chưa từng học) và **Dữ liệu & quản trị** (tải dữ liệu, tải kết quả, học lại). Bấm một mục để mở trang; riêng Dữ liệu & quản trị bấm để mở/đóng các mục con.", ""),
     ("A04", "Bắt đầu", "Các thẻ ngang trong trang là gì?",
      "thẻ là gì|tab trong trang|sao không thấy hết nội dung|chuyển phần trong trang",
      "Trang dài được chia thành thẻ, giống mục lục. Chỉ thẻ đang chọn được hiện để màn hình gọn; bấm tên thẻ khác "
-     "để xem phần đó. Ví dụ chi tiết hồ sơ có 5 thẻ: Tóm tắt & kết luận · Giao dịch · Thói quen khách · Liên kết thiết bị · Nhật ký.", ""),
+     "để xem phần đó. Ví dụ chi tiết giao dịch có 5 thẻ: Tóm tắt & kết luận · Giao dịch · Thói quen khách · Liên kết thiết bị · Nhật ký.", ""),
     ("A05", "Bắt đầu", "Dữ liệu đang xem lấy từ đâu?",
      "dữ liệu nguồn|data pack là gì|bao nhiêu giao dịch|dữ liệu btc",
      "Mặc định là Data Pack của Ban tổ chức: 8.000 giao dịch từ 01/01 đến 30/06/2026 của 400 khách, 150 merchant, "
@@ -34,51 +34,51 @@ Q = [
      "Bản trình diễn chạy trên Streamlit Cloud miễn phí: không có ai mở trong khoảng 12 giờ thì app 'ngủ'. Bấm "
      "**Yes, get this app back up!** và chờ khoảng 1 phút. Lần chạy đầu mô hình mất thêm 10–20 giây.", ""),
 
-    # ---------------------------------------------------------------- B. Hàng đợi hồ sơ
-    ("B01", "Hàng đợi hồ sơ", "Hồ sơ (case) là gì?",
-     "case là gì|vì sao gom giao dịch|một hồ sơ gồm những gì|hồ sơ khác giao dịch thế nào",
-     "Hồ sơ gom các giao dịch bị cảnh báo của **cùng một khách** xảy ra cách nhau không quá 30 phút – thường là một "
-     "đợt tấn công. Xử lý theo hồ sơ giúp chuyên viên kết luận một lần cho cả chuỗi thay vì từng giao dịch lẻ.", "cases"),
-    ("B02", "Hàng đợi hồ sơ", "CRITICAL, HIGH, MEDIUM, LOW khác nhau thế nào?",
+    # ---------------------------------------------------------------- B. Hàng đợi giao dịch
+    ("B01", "Hàng đợi giao dịch", "Nhóm giao dịch (case) là gì?",
+     "case là gì|hồ sơ là gì|vì sao gom giao dịch|một nhóm gồm những gì|nhóm khác giao dịch thế nào",
+     "Nhóm giao dịch gom các giao dịch bị cảnh báo của **cùng một khách** xảy ra cách nhau không quá 30 phút – thường là một "
+     "đợt tấn công. Xử lý theo nhóm giúp chuyên viên kết luận một lần cho cả chuỗi thay vì từng giao dịch lẻ.", "cases"),
+    ("B02", "Hàng đợi giao dịch", "CRITICAL, HIGH, MEDIUM, LOW khác nhau thế nào?",
      "các mức rủi ro|critical là gì|high là gì|medium là gì|low là gì|mức độ cảnh báo",
      "**CRITICAL**: điểm vượt ngưỡng chặn và có dấu hiệu thử sai/dồn dập (R5 hoặc R6) – chặn, gọi xác minh ngay, SLA 5 phút. "
      "**HIGH**: vượt ngưỡng chặn – chặn, chuyên viên kiểm tra, SLA 2 giờ. **MEDIUM**: không chặn, khách phải "
      "xác thực thêm (OTP/sinh trắc học). **LOW**: cho qua.", ""),
-    ("B03", "Hàng đợi hồ sơ", "SLA là gì?",
+    ("B03", "Hàng đợi giao dịch", "SLA là gì?",
      "sla 5 phút|sla 2 giờ|thời hạn xử lý|cột sla nghĩa là gì",
-     "SLA là thời hạn phải xử lý hồ sơ: **CRITICAL 5 phút**, **HIGH 2 giờ**. Ở trang Giám sát thời gian thực, mỗi "
+     "SLA là thời hạn phải xử lý giao dịch: **CRITICAL 5 phút**, **HIGH 2 giờ**. Ở trang Giám sát thời gian thực, mỗi "
      "giao dịch chờ quyết định có đồng hồ đếm ngược, chuyển vàng rồi đỏ khi sắp hết hạn.", "cases"),
-    ("B04", "Hàng đợi hồ sơ", "Các chip lọc nhanh dùng để làm gì?",
+    ("B04", "Hàng đợi giao dịch", "Các chip lọc nhanh dùng để làm gì?",
      "chip khẩn cấp|chip thiết bị dùng chung|nghi vấn mẫu mới|xác thực thêm merchant high|lọc nhanh",
-     "**Khẩn cấp chưa xử lý**: hồ sơ CRITICAL chưa có kết luận – làm trước. **Thiết bị dùng chung (R7)**: một máy "
+     "**Khẩn cấp chưa xử lý**: giao dịch CRITICAL chưa có kết luận – làm trước. **Thiết bị dùng chung (R7)**: một máy "
      "dùng cho nhiều khách – dấu hiệu tài khoản bị chiếm/đường dây. **Xác thực thêm · merchant HIGH**: giao dịch MEDIUM "
      "ở merchant rủi ro cao. **Nghi vấn mẫu mới**: giao dịch điểm thấp nhưng rất bất thường – có thể là kiểu gian lận mới.", "cases"),
-    ("B05", "Hàng đợi hồ sơ", "Làm sao ghi quyết định cho một hồ sơ?",
-     "ghi kết luận|xác nhận gian lận|báo động giả|kết luận hồ sơ|đóng hồ sơ",
-     "Chọn hồ sơ trong danh sách → thẻ **Tóm tắt & kết luận** → chọn *Xác nhận gian lận*, *Báo động giả* hoặc "
+    ("B05", "Hàng đợi giao dịch", "Làm sao ghi quyết định cho một giao dịch?",
+     "ghi kết luận|xác nhận gian lận|báo động giả|kết luận giao dịch|đóng giao dịch",
+     "Chọn giao dịch trong danh sách → thẻ **Tóm tắt & kết luận** → chọn *Xác nhận gian lận*, *Báo động giả* hoặc "
      "*Cần thêm thông tin* → điền tên người xử lý, ghi chú → bấm **Ghi quyết định**. Quyết định áp cho mọi giao dịch "
-     "trong hồ sơ và được ghi vào Nhật ký kèm phiên bản mô hình.", "cases"),
-    ("B06", "Hàng đợi hồ sơ", "Xử lý hàng loạt nhiều hồ sơ cùng lúc thế nào?",
-     "chọn nhiều hồ sơ|xử lý hàng loạt|bulk|kết luận nhiều hồ sơ",
-     "Ở ô **Loại rủi ro** chọn một loại (ví dụ Thiết bị dùng chung) → tích chọn các hồ sơ trong bảng → bấm **Xử lý "
-     "hàng loạt** → chọn kết luận và xác nhận trong hộp thoại. Chỉ gộp được các hồ sơ cùng loại rủi ro để tránh kết luận nhầm.", "cases"),
-    ("B07", "Hàng đợi hồ sơ", "Nút tạm khoá thiết bị, yêu cầu sinh trắc học có tác động thật không?",
+     "trong giao dịch và được ghi vào Nhật ký kèm phiên bản mô hình.", "cases"),
+    ("B06", "Hàng đợi giao dịch", "Xử lý hàng loạt nhiều giao dịch cùng lúc thế nào?",
+     "chọn nhiều giao dịch|xử lý hàng loạt|bulk|kết luận nhiều giao dịch",
+     "Ở ô **Loại rủi ro** chọn một loại (ví dụ Thiết bị dùng chung) → tích chọn các giao dịch trong bảng → bấm **Xử lý "
+     "hàng loạt** → chọn kết luận và xác nhận trong hộp thoại. Chỉ gộp được các giao dịch cùng loại rủi ro để tránh kết luận nhầm.", "cases"),
+    ("B07", "Hàng đợi giao dịch", "Nút tạm khoá thiết bị, yêu cầu sinh trắc học có tác động thật không?",
      "tác vụ nhanh|tạm khóa thiết bị|gửi thông báo cho khách|nút mô phỏng",
      "Không. Đây là **tác vụ mô phỏng** cho bản trình diễn: bấm vào chỉ ghi vào Nhật ký để thể hiện quy trình, không "
      "tác động hệ thống ngân hàng thật. Khi triển khai thật các nút này sẽ nối với hệ thống core banking.", "cases"),
-    ("B08", "Hàng đợi hồ sơ", "Thẻ Thói quen khách cho biết gì?",
+    ("B08", "Hàng đợi giao dịch", "Thẻ Thói quen khách cho biết gì?",
      "thói quen của khách|so với thói quen|cái mới tô cam|hồ sơ hành vi",
-     "So các giao dịch trong hồ sơ với lịch sử của chính khách: thiết bị, tỉnh/thành, quốc gia IP, kênh thường dùng "
+     "So các giao dịch liên quan với lịch sử của chính khách: thiết bị, tỉnh/thành, quốc gia IP, kênh thường dùng "
      "và mức tiền trung vị. Giá trị **lần đầu xuất hiện** được tô cam – ví dụ máy lạ, tỉnh lạ, số tiền gấp nhiều lần mức nền.", "cases"),
-    ("B09", "Hàng đợi hồ sơ", "Sơ đồ liên kết khách hàng – thiết bị – merchant đọc thế nào?",
+    ("B09", "Hàng đợi giao dịch", "Sơ đồ liên kết khách hàng – thiết bị – merchant đọc thế nào?",
      "đọc sơ đồ liên kết|màu trên sơ đồ|thiết bị dùng chung nhiều khách|liên kết thiết bị",
      "Xanh lá: thiết bị đã đăng ký cho khách. Đỏ: thiết bị lạ. Cam: khách hàng **khác** cũng dùng chung thiết bị đó. "
      "Một máy nối với nhiều khách là dấu hiệu số 8 theo TT 17/2024 (sửa đổi bởi TT 25/2025) – thường gặp ở đường dây chiếm tài khoản.", "cases"),
-    ("B10", "Hàng đợi hồ sơ", "Trạng thái hồ sơ gồm những gì?",
+    ("B10", "Hàng đợi giao dịch", "Trạng thái giao dịch gồm những gì?",
      "chưa xử lý|đang xem xét|đã xử lý|xử lý một phần",
      "**Chưa xử lý**: chưa có kết luận. **Đang xem xét / Xử lý một phần**: có giao dịch đã có kết luận, còn giao dịch chưa. "
-     "**Đã xử lý**: mọi giao dịch trong hồ sơ đã có kết luận (từ Data Pack hoặc từ chuyên viên).", "cases"),
-    ("B11", "Hàng đợi hồ sơ", "Kết luận của tôi có bị mất không?",
+     "**Đã xử lý**: mọi giao dịch liên quan đã có kết luận (từ Data Pack hoặc từ chuyên viên).", "cases"),
+    ("B11", "Hàng đợi giao dịch", "Kết luận của tôi có bị mất không?",
      "quyết định có được lưu không|mất dữ liệu kết luận|lưu nhật ký ở đâu|tải nhật ký",
      "Kết luận lưu trên máy chủ của app đến khi app khởi động lại. Trước khi kết thúc buổi làm việc, vào "
      "**Dữ liệu & quản trị → Tải kết quả** để tải `audit_log.csv`.", "dl"),
@@ -135,31 +135,31 @@ Q = [
     # ---------------------------------------------------------------- E. Tổng quan
     ("E01", "Tổng quan", "Tìm một giao dịch cụ thể thế nào?",
      "tìm giao dịch|tra cứu mã giao dịch|tìm theo khách hàng|tìm theo merchant",
-     "Mở trợ lý, chọn chế độ **Giải thích hồ sơ đang xem**, gõ mã giao dịch (VD: TXN006170, hoặc chỉ số 6170) hay mã hồ sơ "
+     "Mở trợ lý, chọn chế độ **Giải thích giao dịch đang xem**, gõ mã giao dịch (VD: TXN006170, hoặc chỉ số 6170) hay mã nhóm giao dịch "
      "(VD: CASE0001) rồi bấm Enter. Trợ lý hiện mức, lý do, luật bật và tách điểm RiskScore thành từng phần.", ""),
     ("E02", "Tổng quan", "Điểm rủi ro được tính thế nào?",
      "công thức điểm|risk score|cách tính điểm|0,6 0,3 0,1|điểm tạo thành",
      "Điểm rủi ro = 0,6 × hồi quy logistic + 0,3 × hệ luật + 0,1 × Isolation Forest, nằm trong khoảng 0–1. Trong trợ lý, chế "
-     "độ **Giải thích hồ sơ đang xem**, gõ mã giao dịch để xem bảng điểm gốc × trọng số = đóng góp của từng phần.", ""),
+     "độ **Giải thích giao dịch đang xem**, gõ mã giao dịch để xem bảng điểm gốc × trọng số = đóng góp của từng phần.", ""),
     ("E03", "Tổng quan", "Ngưỡng chặn và ngưỡng xác thực thêm là bao nhiêu?",
      "ngưỡng là bao nhiêu|0,68|0,43|ngưỡng chặn|ngưỡng cảnh báo",
      "Với Data Pack BTC: điểm từ **0,6847** trở lên bị chặn (HIGH/CRITICAL); từ **0,4349** đến dưới đó phải xác thực "
      "thêm (MEDIUM). Ngưỡng được chọn tự động trong kiểm định chéo, không đặt tay.", "ev_kpi"),
     ("E04", "Tổng quan", "Tải danh sách giao dịch ra Excel được không?",
      "xuất excel|tải csv|download giao dịch|tải xuống danh sách",
-     "Được. Vào **Dữ liệu & quản trị → Tải kết quả**: có tệp nộp, danh sách hồ sơ và tệp chi tiết điểm của toàn bộ "
+     "Được. Vào **Dữ liệu & quản trị → Tải kết quả**: có tệp nộp, danh sách giao dịch và tệp chi tiết điểm của toàn bộ "
      "8.000 giao dịch (scored_transactions_detail.csv).", "dl"),
     ("E05", "Tổng quan", "Xem toàn bộ thói quen và liên kết của một khách ở đâu?",
      "xem một khách hàng|tra cứu khách hàng|lịch sử khách|liên kết của khách",
-     "Mở **Tổng quan**, mục 4 **Hàng đợi hồ sơ**, bấm vào hồ sơ của khách đó: tab **Thói quen khách** và "
-     "**Liên kết thiết bị** cho thấy thói quen và các thiết bị, khách dùng chung. Muốn xem điểm từng giao dịch thì hỏi trợ lý ở chế độ **Giải thích hồ sơ đang xem**.", "dash"),
+     "Mở **Tổng quan**, mục 4 **Hàng đợi giao dịch**, bấm vào giao dịch của khách đó: tab **Thói quen khách** và "
+     "**Liên kết thiết bị** cho thấy thói quen và các thiết bị, khách dùng chung. Muốn xem điểm từng giao dịch thì hỏi trợ lý ở chế độ **Giải thích giao dịch đang xem**.", "dash"),
 
     # ---------------------------------------------------------------- F. Mô hình & kiểm định
     ("F01", "Mô hình & kiểm định", "Mô hình gồm những lớp nào?",
      "kiến trúc mô hình|mô hình hoạt động thế nào|các tầng mô hình|thuật toán là gì",
      "1) Hồ sơ hành vi từng khách (chỉ dùng giao dịch trong quá khứ). 2) Chấm điểm 3 tầng: hệ luật R1–R7, C1–C2 + hồi quy "
      "logistic + Isolation Forest. 3) Lớp bất thường theo ngữ cảnh (v3.2) để bắt kiểu gian lận mới. 4) Xếp 3 tầng "
-     "hành động và gom hồ sơ.", "ev_kpi"),
+     "hành động và gom giao dịch.", "ev_kpi"),
     ("F02", "Mô hình & kiểm định", "Các luật R1 đến R7, C1, C2 là gì?",
      "luật r1|luật r6|r7 là gì|c1 là gì|danh sách luật|hệ luật",
      "R1 mạnh/nhẹ: số tiền ≥ 5 lần / 3–5 lần mức nền. R2: thiết bị lạ mới ≤ 30 ngày. R3: IP nước ngoài và tỉnh khác nơi ở. "
@@ -241,7 +241,7 @@ Q = [
      "vụ AI bên ngoài. Mã khách, số tài khoản, số điện thoại gõ vào ô hỏi được tự che.", ""),
     ("H02", "Bảo mật & trợ lý", "Trợ lý không trả lời được câu hỏi của tôi thì làm gì?",
      "không hiểu câu hỏi|trợ lý trả lời sai|hỏi người thật|liên hệ hỗ trợ",
-     "Bấm **Gọi chuyên viên kỹ thuật** trong ô trợ lý, mô tả vấn đề và chọn mức khẩn. Phiếu tự đính kèm trang và hồ sơ đang "
+     "Bấm **Gọi chuyên viên kỹ thuật** trong ô trợ lý, mô tả vấn đề và chọn mức khẩn. Phiếu tự đính kèm trang và giao dịch đang "
      "xem, được ghi vào Nhật ký quyết định.", ""),
     ("H03", "Bảo mật & trợ lý", "Dữ liệu trong app có phải dữ liệu thật của khách không?",
      "dữ liệu thật|tên khách thật|ẩn danh|bảo vệ dữ liệu cá nhân",

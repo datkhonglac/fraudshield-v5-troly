@@ -556,7 +556,7 @@ def start_run(files, notes, source):
     with st.status("Đang chạy Fraud Shield…", expanded=True) as s:
         st.write("Kiểm tra cấu trúc tệp, đối chiếu manifest và SHA-256")
         st.write("Dựng hồ sơ hành vi, chấm điểm Rule – Logistic Regression – Isolation Forest, lớp ngữ cảnh")
-        st.write("Huấn luyện/đánh giá 5-fold (nếu có nhãn), 3 tầng hành động, thí nghiệm ẩn từng kiểu, gom hồ sơ")
+        st.write("Huấn luyện/đánh giá 5-fold (nếu có nhãn), 3 tầng hành động, thí nghiệm ẩn từng kiểu, gom giao dịch")
         try:
             res = engine(files, core=F.VERSION)
         except Exception as ex:  # noqa
@@ -586,7 +586,7 @@ def auto_load_sample():
     return True
 
 
-# ----------------------------------------------------------------------------- bảng kiểm tra, hồ sơ, liên kết
+# ----------------------------------------------------------------------------- bảng kiểm tra, giao dịch, liên kết
 def checks_table(checks):
     rows = [{"group": c["group"], "check": c["check"], "status": badge(c["status"]), "detail": c.get("detail", "")}
             for c in checks]
@@ -601,7 +601,7 @@ def profile_of(df, cust, exclude_ids):
 
 
 def network(tx, cust, df=None):
-    """Sơ đồ liên kết đa khách hàng: khách hàng của hồ sơ – thiết bị – merchant, kèm các khách hàng KHÁC đã dùng
+    """Sơ đồ liên kết đa khách hàng: khách hàng của giao dịch – thiết bị – merchant, kèm các khách hàng KHÁC đã dùng
     chung thiết bị (dấu hiệu số 8, Phụ lục 02 TT 17/2024 sửa đổi bởi TT 25/2025)."""
     devs = tx.groupby("device_id").agg(n=("transaction_id", "size"), reg=("registered_customer_id", "first"),
                                         risk=("device_risk_level", "first")).reset_index()
@@ -634,7 +634,7 @@ def network(tx, cust, df=None):
             ox += [pos[a][0], pos[b][0], None]; oy += [pos[a][1], pos[b][1], None]
         fig.add_scatter(x=ox, y=oy, mode="lines", line=dict(color=LEVEL_COLOR["HIGH"], width=1.6, dash="dot"),
                         hoverinfo="skip")
-    nodes = [(pos[("c", cust)], cust, NAVY, f"Khách hàng {cust} (hồ sơ này)", 30)]
+    nodes = [(pos[("c", cust)], cust, NAVY, f"Khách hàng {cust} (giao dịch này)", 30)]
     seen = set()
     for r in others:
         if r.customer_id in seen:
@@ -648,7 +648,7 @@ def network(tx, cust, df=None):
         col = "#2B8A3E" if own else LEVEL_COLOR["CRITICAL"]
         nodes.append((pos[("d", r.device_id)], r.device_id, col,
                       f"Thiết bị {r.device_id}<br>{'Đăng ký cho khách này' if own else 'Không đăng ký cho khách này'}"
-                      f"<br>Rủi ro nền {r.risk} · {r.n} giao dịch trong hồ sơ", 22))
+                      f"<br>Rủi ro nền {r.risk} · {r.n} giao dịch liên quan", 22))
     for r in mers.itertuples():
         nodes.append((pos[("m", r.merchant_id)], r.merchant_id, LEVEL_COLOR.get(r.risk, "#2557D6") if r.risk != "LOW" else BLUE,
                       f"Merchant {r.merchant_id}<br>{r.cat} · rủi ro {r.risk}<br>{r.n} giao dịch", 22))
@@ -863,7 +863,7 @@ def page_dash(res):
     # 2 · phát hiện bao nhiêu rủi ro
     with card("db2"):
         dash_head(2, "Phát hiện bao nhiêu giao dịch rủi ro",
-                  f"{n0(n_hold)} giao dịch bị chặn (CRITICAL + HIGH), gom thành {n0(len(res['cases']))} hồ sơ "
+                  f"{n0(n_hold)} giao dịch bị chặn (CRITICAL + HIGH), gom thành {n0(len(res['cases']))} giao dịch "
                   f"ở mục 4 · {n0(cnt.get('MEDIUM', 0))} giao dịch phải xác thực thêm")
         H('<div class="fs fs-kgrid" style="margin:6px 0 10px">' + "".join(
             kcard(n0(cnt.get(l, 0)), f"{l} · {LEVEL_INFO[l][0]}", LEVEL_COLOR[l], LEVEL_INFO[l][1], pct(cnt.get(l, 0) / n))
@@ -924,11 +924,11 @@ def page_dash(res):
                 st.caption(f"Ngoài ra {n0(n_door)} giao dịch điểm thấp bị chuyển sang xác thực thêm vì lớp ngữ cảnh thấy lệch "
                            "mạnh so với thói quen của chính khách hàng.")
 
-    # 4 · hàng đợi hồ sơ
+    # 4 · hàng đợi giao dịch
     with card("db5"):
-        dash_head(4, "Hàng đợi hồ sơ cần xử lý",
+        dash_head(4, "Hàng đợi giao dịch cần xử lý",
                   f"{n0(n_hold)} giao dịch bị chặn của cùng khách, cách nhau ≤ 30 phút được gom thành "
-                  f"{n0(len(res['cases']))} hồ sơ · xếp theo điểm từ cao xuống thấp")
+                  f"{n0(len(res['cases']))} giao dịch · xếp theo điểm từ cao xuống thấp")
     page_cases(res)
 
     # 5 · Isolation Forest khám phá thêm – liệt kê TẤT CẢ giao dịch điểm IF cao chưa bị chặn, có nhãn BTC xếp trên
@@ -1002,7 +1002,7 @@ def page_overview(res):
     kgrid([
         kcard(n0(n), "Giao dịch đã chấm điểm", BLUE, f"{df.datetime.min():%d/%m/%Y} – {df.datetime.max():%d/%m/%Y}"),
         kcard(n0(n_alert), "Chặn giao dịch", LEVEL_COLOR["CRITICAL"],
-              f"CRITICAL + HIGH · gom thành {n0(len(res['cases']))} hồ sơ ({n0(open_cases)} chưa xử lý xong)",
+              f"CRITICAL + HIGH · gom thành {n0(len(res['cases']))} giao dịch ({n0(open_cases)} chưa xử lý xong)",
               pct(n_alert / n), "#FFE3E3"),
         kcard(n0(n_step), "Yêu cầu xác thực thêm", LEVEL_COLOR["MEDIUM"], "MEDIUM · không chặn, hỏi OTP/sinh trắc học",
               pct(n_step / n), "#FFF3BF"),
@@ -1095,11 +1095,11 @@ def page_overview(res):
             f'<div class="fs-mini"><span>{badge(l)}</span><span class="why">{LEVEL_INFO[l][1]}</span>'
             f'<b>{n0(rep["risk_level_counts"].get(l, 0))}</b></div>' for l in LEVELS) + "</div>")
     with c2, card("ov_urgent"):
-        title("Hồ sơ cần xử lý trước", "5 hồ sơ chưa xử lý xong có điểm cao nhất – mở ở mục Hồ sơ cảnh báo")
+        title("Giao dịch cần xử lý trước", "5 giao dịch chưa xử lý xong có điểm cao nhất – mở ở mục Giao dịch cảnh báo")
         cases = res["cases"].assign(st_=cs.values)
         top = cases[cases.st_ != "Đã xử lý"].head(5)
         if top.empty:
-            st.success("Mọi hồ sơ đã có kết luận.", icon=":material/check_circle:")
+            st.success("Mọi giao dịch đã có kết luận.", icon=":material/check_circle:")
         else:
             H('<div class="fs">' + "".join(
                 f'<div class="fs-mini"><span class="id">{e(r.case_id)}</span>{badge(r.case_level)}'
@@ -1267,7 +1267,7 @@ def tx_detail(res, tid):
             <div class="item"><div class="k">Ngưỡng chặn · xác thực thêm</div><div class="v">{d(thr, 4)} · {d(med, 4)}</div></div>
             <div class="item"><div class="k">Hành động</div><div class="v">{e(F.ACTIONS[r.risk_level])}</div></div>
             <div class="item"><div class="k">Số tiền</div><div class="v">{money(r.amount)}</div></div>
-            <div class="item"><div class="k">Hồ sơ</div><div class="v">{e(r.case_id) if isinstance(r.case_id, str) else '–'}</div></div>
+            <div class="item"><div class="k">Nhóm giao dịch</div><div class="v">{e(r.case_id) if isinstance(r.case_id, str) else '–'}</div></div>
           </div><div class="fs-reason"><b>Lý do:</b> {e(r.alert_reason)}</div></div>""")
     st.session_state.as_ctx = {"kind": "tx", "case": str(getattr(r, "case_id", "") or "-"), "label": f"giao dịch {tid}",
                                "level": r.risk_level, "score": float(r.risk_score), "reason": r.alert_reason,
@@ -1339,8 +1339,8 @@ def tx_fields_part(r):
             for k, lab_ in FIELD_LABELS.items() if k in r.index) + "</div>")
 
 
-# ============================================================================= 3. HỒ SƠ CẢNH BÁO
-QCHIPS = ["Tất cả hồ sơ", "Khẩn cấp chưa xử lý", "Thiết bị dùng chung (R7)", "Xác thực thêm · merchant HIGH",
+# ============================================================================= 3. GIAO DỊCH CẢNH BÁO
+QCHIPS = ["Tất cả giao dịch", "Khẩn cấp chưa xử lý", "Thiết bị dùng chung (R7)", "Xác thực thêm · merchant HIGH",
           "Nghi vấn mẫu mới"]
 
 
@@ -1348,18 +1348,18 @@ QCHIPS = ["Tất cả hồ sơ", "Khẩn cấp chưa xử lý", "Thiết bị d�
 def bulk_dialog(res, sel, rtype):
     ids = [(c, t) for c, s in zip(sel.case_id, sel.transaction_ids) for t in s.split(";")]
     H(f'<div class="fs fs-sub" style="font-size:14px;color:#1F2937">Bạn sắp ghi <b>một kết luận chung</b> cho '
-      f'<b>{len(sel)} hồ sơ</b> (gồm <b>{len(ids)} giao dịch</b>) cùng loại rủi ro <b>{e(rtype)}</b>: '
+      f'<b>{len(sel)} giao dịch đã chọn</b> (gồm <b>{len(ids)} giao dịch liên quan</b>) cùng loại rủi ro <b>{e(rtype)}</b>: '
       f'{e(", ".join(sel.case_id.head(8)))}{" …" if len(sel) > 8 else ""}</div>')
     dec = st.radio("Kết luận", DECISIONS, horizontal=True, key="bulk_dec")
     a, b = st.columns(2)
     who = a.text_input("Người xử lý", placeholder="Tên chuyên viên", key="bulk_who")
     note = b.text_input("Ghi chú", placeholder="VD: cùng một mẫu tấn công", key="bulk_note")
     c1, c2 = st.columns(2)
-    if c1.button(f"Xác nhận ghi cho {len(sel)} hồ sơ", type="primary", width="stretch", key="bulk_ok"):
+    if c1.button(f"Xác nhận ghi cho {len(sel)} giao dịch", type="primary", width="stretch", key="bulk_ok"):
         save_decisions(res["ds"], [{"transaction_id": t, "case_id": c, "decision": dec, "note": f"[Hàng loạt] {note}"[:500],
                                     "user": (who or "chuyên viên")[:60], "time": now_vn(),
                                     "threshold": res["report"]["threshold"]} for c, t in ids])
-        st.session_state.flash = f"Đã ghi “{dec}” cho {len(sel)} hồ sơ ({len(ids)} giao dịch)"
+        st.session_state.flash = f"Đã ghi “{dec}” cho {len(sel)} giao dịch đã chọn ({len(ids)} giao dịch liên quan)"
         st.rerun()
     if c2.button("Huỷ", width="stretch", key="bulk_cancel"):
         st.rerun()
@@ -1437,7 +1437,7 @@ def txn_queue(res, kind):
 
 
 def case_labels(res, view):
-    """Nhãn BTC của từng hồ sơ (gộp nhãn các giao dịch trong hồ sơ) và so với kết quả chặn của mô hình."""
+    """Nhãn BTC của từng giao dịch (gộp nhãn các giao dịch liên quan) và so với kết quả chặn của mô hình."""
     lv = res.get("lab_view")
     lab = {} if lv is None else dict(zip(lv.transaction_id, zip(lv.y, lv.fraud_type)))
     txt, cmp_ = [], []
@@ -1476,12 +1476,12 @@ def page_cases(res):
     hub = live_hub(hub_key(res))
     if hub.get("ready"):
         st.fragment(queue_live_box, run_every=2.0)(hub, res)
-    kgrid([kcard(n0(len(cases)), "Tổng hồ sơ", LEVEL_COLOR["CRITICAL"], f"gom từ {n0(res['report']['n_alerts'])} giao dịch bị chặn"),
+    kgrid([kcard(n0(len(cases)), "Tổng giao dịch", LEVEL_COLOR["CRITICAL"], f"gom từ {n0(res['report']['n_alerts'])} giao dịch bị chặn"),
            kcard(n0(cnt.get("Chưa xử lý", 0)), "Chưa xử lý", LEVEL_COLOR["HIGH"],
-                 f"trong đó {n0(len(urgent))} hồ sơ khẩn cấp (SLA 5 phút)"),
+                 f"trong đó {n0(len(urgent))} giao dịch khẩn cấp (SLA 5 phút)"),
            kcard(n0(cnt.get("Đang xác minh", 0) + cnt.get("Xử lý một phần", 0)), "Đang xem xét", BLUE,
                  "đang xác minh hoặc xử lý một phần"),
-           kcard(n0(cnt.get("Đã xử lý", 0)), "Đã xử lý", GREEN, "mọi giao dịch trong hồ sơ đã có kết luận")])
+           kcard(n0(cnt.get("Đã xử lý", 0)), "Đã xử lý", GREEN, "mọi giao dịch liên quan đã có kết luận")])
 
     n_med_mh = int(((df.risk_level == "MEDIUM") & (df.merchant_high == 1)).sum())
     n_nov = int(df["novelty"].sum()) if "novelty" in df else 0
@@ -1500,7 +1500,7 @@ def page_cases(res):
         stv = c[2].selectbox("Trạng thái", ["Tất cả", "Chưa xử lý", "Đang xác minh", "Xử lý một phần", "Đã xử lý"],
                              key=f"cs_st_{rid}")
         lbf = c[3].selectbox("Nhãn BTC", ["Tất cả", "Gian lận", "Bình thường", "Chưa có nhãn"], key=f"cs_lb_{rid}")
-        q = c[4].text_input("Tìm kiếm", placeholder="Tìm theo mã hồ sơ, khách hàng, giao dịch…", key=f"cs_q_{rid}"
+        q = c[4].text_input("Tìm kiếm", placeholder="Tìm theo mã nhóm giao dịch, khách hàng, giao dịch…", key=f"cs_q_{rid}"
                             ).strip().upper()
         c[5].button("Tìm kiếm", type="primary", width="stretch", key=f"cs_go_{rid}")
     view = cases
@@ -1519,7 +1519,7 @@ def page_cases(res):
                     | view.transaction_ids.str.upper().str.contains(q, regex=False)]
     view = view.reset_index(drop=True)
     if view.empty:
-        st.warning("Không có hồ sơ nào khớp bộ lọc.", icon=":material/search_off:")
+        st.warning("Không có giao dịch nào khớp bộ lọc.", icon=":material/search_off:")
         return
 
     bulk = ty != "Tất cả"
@@ -1528,14 +1528,14 @@ def page_cases(res):
     if lbf != "Tất cả":
         view = view[view.nhan_btc.str.startswith(lbf)].reset_index(drop=True)
         if view.empty:
-            st.warning("Không có hồ sơ nào khớp bộ lọc.", icon=":material/search_off:")
+            st.warning("Không có giao dịch nào khớp bộ lọc.", icon=":material/search_off:")
             return
     with card("cs_list"):
         n_ok, n_bad = int((view.so_nhan == "Đúng").sum()), int((view.so_nhan == "Bắt sai").sum())
-        title("Danh sách hồ sơ", f"{n0(len(view))} hồ sơ · sắp theo điểm cao nhất · "
+        title("Danh sách giao dịch", f"{n0(len(view))} giao dịch · sắp theo điểm cao nhất · "
               + ("tích nhiều dòng để xử lý hàng loạt cùng loại rủi ro" if bulk
-                 else "bấm một dòng để mở hồ sơ · chọn một loại rủi ro để xử lý hàng loạt"))
-        tbl = pd.DataFrame({"Mã hồ sơ": view.case_id, "Khách hàng": view.customer_id, "Mức rủi ro": view.case_level,
+                 else "bấm một dòng để mở giao dịch · chọn một loại rủi ro để xử lý hàng loạt"))
+        tbl = pd.DataFrame({"Mã nhóm giao dịch": view.case_id, "Khách hàng": view.customer_id, "Mức rủi ro": view.case_level,
                             "Điểm": view.max_risk_score, "Nhãn BTC": view.nhan_btc,
                             "Loại rủi ro": view.risk_type, "Trạng thái": view.case_status,
                             "Thời gian": pd.to_datetime(view.start_time).dt.strftime("%d/%m/%Y %H:%M"),
@@ -1555,12 +1555,12 @@ def page_cases(res):
         except Exception:  # noqa
             rows = []
         if bulk:
-            if st.button(f"Xử lý hàng loạt {len(rows)} hồ sơ đã chọn" if rows else "Xử lý hàng loạt (tích chọn hồ sơ trước)",
+            if st.button(f"Xử lý hàng loạt {len(rows)} giao dịch đã chọn" if rows else "Xử lý hàng loạt (tích chọn giao dịch trước)",
                          icon=":material/done_all:", type="primary", disabled=not rows, width="stretch",
                          key=f"bulk_{rid}_{ty}"):
                 bulk_dialog(res, view.iloc[rows], ty)
     if not rows:
-        H('<div class="fs fs-note" style="text-align:center">Bấm vào một hồ sơ trong danh sách để mở thông tin chi tiết '
+        H('<div class="fs fs-note" style="text-align:center">Bấm vào một giao dịch trong danh sách để mở thông tin chi tiết '
           'và ghi kết luận.</div>')
         return
     i = rows[0]
@@ -1575,7 +1575,7 @@ def page_cases(res):
           {badge(c.case_level)}</div><div class="fs-sub" style="margin:2px 0 0">{e(c.risk_type)} · {int(c.n_transactions)} giao dịch ·
           {money(c.total_amount)} · SLA {e(c.sla)} · <b style="color:{st_color}">{e(c.case_status)}</b> ·
           Nhãn BTC: <b style="color:{lb_col}">{e(c.nhan_btc)}</b></div></div>""")
-        st.session_state.as_ctx = {"kind": "case", "case": c.case_id, "label": f"hồ sơ {c.case_id}", "level": c.case_level,
+        st.session_state.as_ctx = {"kind": "case", "case": c.case_id, "label": f"giao dịch {c.case_id}", "level": c.case_level,
                                    "score": float(c.max_risk_score), "reason": c.top_reason, "type": c.risk_type,
                                    "rules": [F.RULE_NAMES[k].split(" – ")[0] for k in F.RULE_W if tx[k].sum() > 0]}
         tab = subtabs(f"case_{rid}", CASE_TABS)
@@ -1591,7 +1591,7 @@ def page_cases(res):
             case_log_part(res, c)
 
 
-CASE_TABS = ["Tóm tắt & kết luận", "Giao dịch trong hồ sơ", "Thói quen khách", "Liên kết thiết bị", "Nhật ký"]
+CASE_TABS = ["Tóm tắt & kết luận", "Giao dịch liên quan", "Thói quen khách", "Liên kết thiết bị", "Nhật ký"]
 
 
 def case_summary(res, c, tx, first, ids):
@@ -1621,7 +1621,7 @@ def case_summary(res, c, tx, first, ids):
 
 
 def case_tx_part(tx):
-    title(f"Các giao dịch trong hồ sơ ({len(tx)})")
+    title(f"Các giao dịch liên quan ({len(tx)})")
     grid(pd.DataFrame({"Thời gian": tx.datetime.dt.strftime("%d/%m %H:%M:%S"), "Giao dịch": tx.transaction_id,
                        "Số tiền": tx.amount.map(money), "Trạng thái GD": tx.transaction_status,
                        "Kênh": tx.payment_channel, "Thiết bị": tx.device_id, "Tỉnh": tx.location,
@@ -1679,7 +1679,7 @@ def case_log_part(res, c):
     if log:
         table(log, [("time", "Thời điểm"), ("user", "Người xử lý"), ("decision", "Kết luận / tác vụ"), ("note", "Ghi chú")])
     else:
-        st.caption("Chưa có quyết định hay tác vụ nào cho hồ sơ này.")
+        st.caption("Chưa có quyết định hay tác vụ nào cho giao dịch này.")
 
 
 def page_log(res):
@@ -1687,11 +1687,11 @@ def page_log(res):
     with card("log_all"):
         title("Nhật ký quyết định và tác vụ", f"{n0(len(log))} dòng · mới nhất ở trên · mỗi kết luận ghi kèm người xử lý và thời gian")
         if log:
-            table(log[:300], [("time", "Thời điểm"), ("case", "Hồ sơ"), ("user", "Người xử lý"),
+            table(log[:300], [("time", "Thời điểm"), ("case", "Nhóm giao dịch"), ("user", "Người xử lý"),
                               ("decision", "Kết luận / tác vụ"), ("note", "Ghi chú")])
         else:
-            st.caption("Chưa có quyết định nào. Vào Hàng đợi hồ sơ, chọn một hồ sơ và ghi kết luận ở thẻ Tóm tắt & kết luận.")
-            st.button("Mở hàng đợi hồ sơ", icon=":material/inbox:", on_click=_go, args=("cases",), key="log_go")
+            st.caption("Chưa có quyết định nào. Vào Hàng đợi giao dịch, chọn một giao dịch và ghi kết luận ở thẻ Tóm tắt & kết luận.")
+            st.button("Mở hàng đợi giao dịch", icon=":material/inbox:", on_click=_go, args=("cases",), key="log_go")
 
 
 def page_cust(res):
@@ -3540,7 +3540,7 @@ def page_data(res):
         with card("dt_run"):
             title("Chạy mô hình", "Hệ luật (R1–R7) + Hồi quy logistic + Isolation Forest (học trên giai đoạn quá khứ), "
                   "gộp điểm 0,6 – 0,3 – 0,1, lớp ngữ cảnh (lệch so với thói quen của chính khách), xếp 3 tầng hành động "
-                  "và gom hồ sơ")
+                  "và gom giao dịch")
             if st.button("Chạy mô hình với dữ liệu tải lên" if ups else "Tải Data Pack lên để chạy mô hình", type="primary",
                          icon=":material/play_arrow:", width="stretch", key="btn_run", disabled=not ups):
                 files, notes = F.collect_files([(u.name, u.getvalue()) for u in ups])
@@ -3661,7 +3661,7 @@ def downloads(res):
         b2.download_button("Tải tất cả (.zip)", z.getvalue(), "FraudShield_ketqua.zip", "application/zip", type="primary",
                            icon=":material/download:", width="stretch", key=f"dl_all_{res['rid']}")
         desc = [("submission_output.csv", "Tệp nộp theo template BTC (9 cột)", "text/csv"),
-                ("cases.csv", "Danh sách hồ sơ cảnh báo", "text/csv"),
+                ("cases.csv", "Danh sách giao dịch cảnh báo", "text/csv"),
                 ("scored_transactions_detail.csv", "Toàn bộ giao dịch kèm đặc trưng, cờ luật, điểm từng lớp", "text/csv"),
                 ("kpi_report.json", "Báo cáo chỉ số kiểm định", "application/json"),
                 ("data_checks.csv", "Kết quả kiểm tra dữ liệu", "text/csv"),
@@ -3677,7 +3677,7 @@ def downloads(res):
 # Chạy hoàn toàn trong app: trả lời từ bộ hỏi–đáp tro_ly/hoi_dap.csv (so khớp TF-IDF ký tự, không dấu) và từ lý do
 # mô hình đã sinh. KHÔNG gọi dịch vụ AI bên ngoài – không dữ liệu khách nào rời khỏi hệ thống.
 FAQ_PATH = Path(__file__).resolve().parent / "tro_ly" / "hoi_dap.csv"
-AS_MODES = ["Hỏi cách dùng", "Giải thích hồ sơ đang xem", "Gọi chuyên viên kỹ thuật"]
+AS_MODES = ["Hỏi cách dùng", "Giải thích giao dịch đang xem", "Gọi chuyên viên kỹ thuật"]
 AS_SUGGEST = ["A02", "B05", "C02", "F04"]
 AS_THR = 0.50
 PII = [(re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+"), "[email]"),
@@ -3783,11 +3783,11 @@ LEVEL_PLAIN = {"CRITICAL": "mức nguy hiểm nhất – chặn giao dịch và 
                "LOW": "mức thấp – cho qua"}
 TYPE_TIP = {"Thử sai mật khẩu/OTP": "Gọi xác minh khách qua số điện thoại đã đăng ký. Nếu khách không thực hiện, tạm khoá "
                                     "thiết bị và yêu cầu đổi mật khẩu.",
-            "Giao dịch dồn dập": "Xem thẻ Giao dịch trong hồ sơ: chuỗi giao dịch sát nhau thường là rút tiền nhanh sau khi "
+            "Giao dịch dồn dập": "Xem thẻ Giao dịch liên quan: chuỗi giao dịch sát nhau thường là rút tiền nhanh sau khi "
                                  "chiếm tài khoản. Xác minh trước khi cho các giao dịch tiếp theo đi qua.",
             "Thiết bị lạ": "Hỏi khách có vừa đổi điện thoại không. Nếu không, đây có thể là đăng nhập trái phép.",
             "Thiết bị dùng chung": "Mở thẻ Liên kết thiết bị: các khách dùng chung máy có thể cùng bị chiếm quyền hoặc là "
-                                   "tài khoản trong một đường dây – nên xem cả các hồ sơ liên quan.",
+                                   "tài khoản trong một đường dây – nên xem cả các giao dịch liên quan.",
             "IP nước ngoài, nơi lạ": "Hỏi khách có đang ở nước ngoài/đi công tác không. Nếu không, khả năng cao tài khoản bị "
                                      "dùng từ xa.",
             "Số tiền bất thường": "Xác nhận với khách mục đích của khoản chi lớn hơn nhiều lần mức thường ngày.",
@@ -3800,7 +3800,7 @@ def _as_pick_id(v):
 
 
 def _as_lookup(res, q):
-    """Tìm mã giao dịch / mã hồ sơ. Trả về ("tx", dòng) | ("case", hồ sơ) | (None, None)."""
+    """Tìm mã giao dịch / mã nhóm giao dịch. Trả về ("tx", dòng) | ("case", giao dịch) | (None, None)."""
     q = re.sub(r"\s+", "", str(q or "")).upper()
     if not q:
         return None, None
@@ -3877,7 +3877,7 @@ def _as_explain_tx(res, r, head=True):
     cl = rep.get("context_layer") or {}
     ctx_line = (f'<br><b>Lớp ngữ cảnh:</b> lệch {d(r.ctx_score, 1)} / ngưỡng {d(cl["threshold"], 1)}'
                 if "ctx_score" in r.index and cl.get("threshold") is not None else "")
-    case = f" · hồ sơ {e(r.case_id)}" if isinstance(r.get("case_id"), str) else ""
+    case = f" · giao dịch {e(r.case_id)}" if isinstance(r.get("case_id"), str) else ""
     rank = (f' · hạng #{int(r.priority_rank)}/{n0(len(res["df"]))}' if pd.notna(r.get("priority_rank"))
             else " · giao dịch thời gian thực từ FS Pay")
     top = (f'<b>{e(r.transaction_id)}</b> · {badge(r.risk_level)}{rank}'
@@ -3914,8 +3914,8 @@ def _as_explain_case(res, c):
 
 def as_explain(res):
     ctx = st.session_state.get("as_ctx") or {}
-    st.text_input("Mã giao dịch hoặc mã hồ sơ", key="as_q_id", placeholder="VD: TXN006170 hoặc CASE0001",
-                  help="Gõ mã giao dịch (hoặc chỉ phần số) hoặc mã hồ sơ, rồi bấm Enter.")
+    st.text_input("Mã giao dịch hoặc mã nhóm giao dịch", key="as_q_id", placeholder="VD: TXN006170 hoặc CASE0001",
+                  help="Gõ mã giao dịch (hoặc chỉ phần số) hoặc mã nhóm giao dịch, rồi bấm Enter.")
     live = [x["tid"] for x in reversed(hub_get(res)["events"]) if x.get("src") != "Bộ mẫu" and "parts" in x][:1]
     top = live + res["df"].nsmallest(3 - len(live), "priority_rank").transaction_id.tolist()
     cols = st.columns(len(top))
@@ -3923,16 +3923,16 @@ def as_explain(res):
         col.button(t, key=f"as_sug_{t}", on_click=_as_pick_id, args=(t,), width="stretch")
     q = st.session_state.get("as_q_id") or ctx.get("case", "")
     if not q or q == "-":
-        H('<div class="fs as-b bot">Gõ một <b>mã giao dịch</b> hoặc <b>mã hồ sơ</b>, bấm một gợi ý ở trên (3 giao dịch ưu '
-          'tiên cao nhất), hoặc mở một hồ sơ ở <b>Hàng đợi hồ sơ</b> rồi quay lại đây. Mình sẽ giải thích vì sao nó bị cảnh '
+        H('<div class="fs as-b bot">Gõ một <b>mã giao dịch</b> hoặc <b>mã nhóm giao dịch</b>, bấm một gợi ý ở trên (3 giao dịch ưu '
+          'tiên cao nhất), hoặc mở một giao dịch ở <b>Hàng đợi giao dịch</b> rồi quay lại đây. Mình sẽ giải thích vì sao nó bị cảnh '
           'báo và tách điểm RiskScore thành từng phần.</div>')
         return
     kind, obj = _as_lookup(res, q)
     if kind is None:
         H(f'<div class="fs as-b bot">Không tìm thấy <b>{e(str(q)[:40])}</b> trong {n0(len(res["df"]))} giao dịch đang '
-          'xem. Mã giao dịch có dạng <code>TXN006170</code>, mã hồ sơ có dạng <code>CASE0001</code>.</div>')
+          'xem. Mã giao dịch có dạng <code>TXN006170</code>, mã nhóm giao dịch có dạng <code>CASE0001</code>.</div>')
         return
-    H(f'<div class="fs as-b user">Giải thích {"hồ sơ" if kind == "case" else "giao dịch"} '
+    H(f'<div class="fs as-b user">Giải thích giao dịch '
       f'{e(obj.case_id if kind == "case" else obj.transaction_id)}</div>')
     if kind == "case":
         _as_explain_case(res, obj)
@@ -4004,7 +4004,7 @@ def assistant_body(res):
     if st.session_state.pop("as_go", False):
         st.rerun()
     H('<div class="fs as-head"><div class="av"></div><div class="tx"><div class="t">Trợ lý Fraud Shield</div><div class="s">'
-      'Hướng dẫn sử dụng · giải thích hồ sơ · hỗ trợ kỹ thuật</div><span class="lock">🔒 Chạy nội bộ · không gửi dữ liệu '
+      'Hướng dẫn sử dụng · giải thích giao dịch · hỗ trợ kỹ thuật</div><span class="lock">🔒 Chạy nội bộ · không gửi dữ liệu '
       'khách ra ngoài</span></div></div>')
     with st.container(key="as_body"):
         mode = st.pills("Chế độ", AS_MODES, default=AS_MODES[0], key="as_mode", label_visibility="collapsed") or AS_MODES[0]
