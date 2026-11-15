@@ -931,7 +931,8 @@ def page_dash(res):
                   f"{n0(len(res['cases']))} giao dịch · xếp theo điểm từ cao xuống thấp")
     page_cases(res)
 
-    # 5 · Isolation Forest khám phá thêm – liệt kê TẤT CẢ giao dịch điểm IF cao chưa bị chặn, có nhãn BTC xếp trên
+    # 5 · Isolation Forest khám phá thêm – liệt kê TẤT CẢ giao dịch điểm IF cao chưa bị chặn
+    #     sắp xếp: mặc định theo điểm Isolation Forest; tuỳ chọn đưa giao dịch có nhãn BTC lên trước
     with card("db4"):
         rest = df[df.predicted_fraud == 0]
         if_thr = float(rep.get("novelty_threshold", df.anomaly_score.quantile(0.95)))
@@ -939,13 +940,17 @@ def page_dash(res):
         labs = label_map(res)
         top["lab"] = top.transaction_id.map(labs).fillna("")
         top["lab_ord"] = np.where(top.lab.str.startswith("Gian lận"), 0, np.where(top.lab == "Bình thường", 1, 2))
-        top = top.sort_values(["lab_ord", "anomaly_score", "risk_score"], ascending=[True, False, False])
         n_fr = int((top.lab_ord == 0).sum())
         n_ok = int((top.lab_ord == 1).sum())
         dash_head(5, "Giao dịch có điểm Isolation Forest cao",
                   f"Tất cả {n0(len(top))} giao dịch có điểm Isolation Forest ≥ {d(if_thr, 3)} <b>nằm ngoài</b> {n0(n_hold)} "
                   f"giao dịch đã bị chặn · {n0(int((top.risk_level == 'MEDIUM').sum()))} đang ở mức xác thực thêm, "
-                  f"{n0(int((top.risk_level == 'LOW').sum()))} đang được cho qua · giao dịch có nhãn BTC xếp lên trên")
+                  f"{n0(int((top.risk_level == 'LOW').sum()))} đang được cho qua")
+        srt = st.segmented_control("Sắp xếp theo", IF_SORTS, default=IF_SORTS[0], key=f"if_sort_{res['rid']}")
+        if srt == IF_SORTS[1]:   # nhãn BTC: gian lận → bình thường → chưa có nhãn, rồi theo điểm IF
+            top = top.sort_values(["lab_ord", "anomaly_score", "risk_score"], ascending=[True, False, False])
+        else:                    # mặc định: điểm Isolation Forest cao trước – cách chuyên viên rà khi không có nhãn
+            top = top.sort_values(["anomaly_score", "risk_score"], ascending=[False, False])
         rows = []
         for i, r in enumerate(top.itertuples(), 1):
             lb = r.lab
@@ -970,6 +975,7 @@ def page_dash(res):
                    "rà và gắn nhãn, phục vụ học lại.")
 
 
+IF_SORTS = ["Điểm Isolation Forest", "Nhãn BTC"]
 IF_SIGNALS = [("Máy lạ với khách", lambda r: r.prof_new_device == 1), ("Nơi lạ với khách", lambda r: r.prof_new_location == 1),
               ("IP lạ", lambda r: r.prof_new_ip == 1), ("Kênh thanh toán lạ", lambda r: r.prof_new_channel == 1),
               ("Lỗi / bị từ chối", lambda r: r.transaction_status != "SUCCESS"), ("Ngoài nơi ở", lambda r: r.loc_mismatch == 1),
