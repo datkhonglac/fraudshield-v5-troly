@@ -31,7 +31,7 @@ Menu gồm 6 mục; bấm một mục để mở trang (riêng Dữ liệu & qu�
 
 | Mục menu | Mục con | Thẻ trong trang |
 |---|---|---|
-| **Tổng quan** | – | Dashboard (chỉ đếm trên 8.000 giao dịch): 1 Đã phân tích bao nhiêu → 2 Phát hiện bao nhiêu rủi ro → 3 Nguyên nhân → 4 Giao dịch có điểm Isolation Forest cao (20 giao dịch bất thường nhất ngoài nhóm chặn) → 5 Hàng đợi hồ sơ. Tra cứu mặc định xếp CRITICAL → HIGH → MEDIUM → LOW |
+| **Tổng quan** | – | Dashboard (chỉ đếm trên 8.000 giao dịch): 1 Đã phân tích bao nhiêu → 2 Phát hiện bao nhiêu rủi ro → 3 Nguyên nhân → 4 Hàng đợi hồ sơ → 5 Giao dịch có điểm Isolation Forest cao (giao dịch bất thường ngoài nhóm bị chặn). Tra cứu mặc định xếp CRITICAL → HIGH → MEDIUM → LOW |
 | **Nhật ký xử lý** | – | – |
 | **Kiểm định** (2.000 giao dịch có nhãn) | – | Tổng hợp · Danh sách giao dịch có nhãn · Bắt đúng · Bỏ sót · Bắt sai · Thử đổi ngưỡng · Có hiệu chỉnh được không? |
 | **Giám sát thời gian thực** | – | Cần xử lý ngay · Biểu đồ điểm · Giao dịch đang đến · Đối chiếu bộ mẫu |

@@ -15,7 +15,7 @@ Q = [
      "xử lý, và giám sát giao dịch mới theo thời gian thực từ ứng dụng khách FS Pay.", ""),
     ("A02", "Bắt đầu", "Tôi nên bắt đầu từ đâu?",
      "mới vào thì làm gì|hướng dẫn nhanh|bắt đầu sử dụng|lần đầu dùng",
-     "Mở **Tổng quan** (mục Tổng quan), kéo xuống mục 5 **Hàng đợi hồ sơ**, bấm chip **Khẩn cấp chưa xử lý** để thấy hồ sơ cần làm trước, "
+     "Mở **Tổng quan** (mục Tổng quan), kéo xuống mục 4 **Hàng đợi hồ sơ**, bấm chip **Khẩn cấp chưa xử lý** để thấy hồ sơ cần làm trước, "
      "chọn một hồ sơ rồi đọc thẻ **Tóm tắt & kết luận** và ghi quyết định. Phần đầu Dashboard cho toàn cảnh 8.000 giao dịch.", "cases"),
     ("A03", "Bắt đầu", "Menu bên trái được chia thế nào?",
      "các nhóm trong menu|menu có những gì|cấu trúc menu|tìm chức năng ở đâu",
@@ -151,7 +151,7 @@ Q = [
      "8.000 giao dịch (scored_transactions_detail.csv).", "dl"),
     ("E05", "Tổng quan", "Xem toàn bộ thói quen và liên kết của một khách ở đâu?",
      "xem một khách hàng|tra cứu khách hàng|lịch sử khách|liên kết của khách",
-     "Mở **Tổng quan**, mục 5 **Hàng đợi hồ sơ**, bấm vào hồ sơ của khách đó: tab **Thói quen khách** và "
+     "Mở **Tổng quan**, mục 4 **Hàng đợi hồ sơ**, bấm vào hồ sơ của khách đó: tab **Thói quen khách** và "
      "**Liên kết thiết bị** cho thấy thói quen và các thiết bị, khách dùng chung. Muốn xem điểm từng giao dịch thì hỏi trợ lý ở chế độ **Giải thích hồ sơ đang xem**.", "dash"),
 
     # ---------------------------------------------------------------- F. Mô hình & kiểm định

@@ -864,7 +864,7 @@ def page_dash(res):
     with card("db2"):
         dash_head(2, "Phát hiện bao nhiêu giao dịch rủi ro",
                   f"{n0(n_hold)} giao dịch bị chặn (CRITICAL + HIGH), gom thành {n0(len(res['cases']))} hồ sơ "
-                  f"ở mục 5 · {n0(cnt.get('MEDIUM', 0))} giao dịch phải xác thực thêm")
+                  f"ở mục 4 · {n0(cnt.get('MEDIUM', 0))} giao dịch phải xác thực thêm")
         H('<div class="fs fs-kgrid" style="margin:6px 0 10px">' + "".join(
             kcard(n0(cnt.get(l, 0)), f"{l} · {LEVEL_INFO[l][0]}", LEVEL_COLOR[l], LEVEL_INFO[l][1], pct(cnt.get(l, 0) / n))
             for l in LEVELS) + "</div>")
@@ -924,7 +924,14 @@ def page_dash(res):
                 st.caption(f"Ngoài ra {n0(n_door)} giao dịch điểm thấp bị chuyển sang xác thực thêm vì lớp ngữ cảnh thấy lệch "
                            "mạnh so với thói quen của chính khách hàng.")
 
-    # 4 · Isolation Forest khám phá thêm – liệt kê TẤT CẢ giao dịch điểm IF cao chưa bị chặn, có nhãn BTC xếp trên
+    # 4 · hàng đợi hồ sơ
+    with card("db5"):
+        dash_head(4, "Hàng đợi hồ sơ cần xử lý",
+                  f"{n0(n_hold)} giao dịch bị chặn của cùng khách, cách nhau ≤ 30 phút được gom thành "
+                  f"{n0(len(res['cases']))} hồ sơ · xếp theo điểm từ cao xuống thấp")
+    page_cases(res)
+
+    # 5 · Isolation Forest khám phá thêm – liệt kê TẤT CẢ giao dịch điểm IF cao chưa bị chặn, có nhãn BTC xếp trên
     with card("db4"):
         rest = df[df.predicted_fraud == 0]
         if_thr = float(rep.get("novelty_threshold", df.anomaly_score.quantile(0.95)))
@@ -935,7 +942,7 @@ def page_dash(res):
         top = top.sort_values(["lab_ord", "anomaly_score", "risk_score"], ascending=[True, False, False])
         n_fr = int((top.lab_ord == 0).sum())
         n_ok = int((top.lab_ord == 1).sum())
-        dash_head(4, "Giao dịch có điểm Isolation Forest cao",
+        dash_head(5, "Giao dịch có điểm Isolation Forest cao",
                   f"Tất cả {n0(len(top))} giao dịch có điểm Isolation Forest ≥ {d(if_thr, 3)} <b>nằm ngoài</b> {n0(n_hold)} "
                   f"giao dịch đã bị chặn · {n0(int((top.risk_level == 'MEDIUM').sum()))} đang ở mức xác thực thêm, "
                   f"{n0(int((top.risk_level == 'LOW').sum()))} đang được cho qua · giao dịch có nhãn BTC xếp lên trên")
@@ -961,13 +968,6 @@ def page_dash(res):
                    f"nên chỉ ra những giao dịch khác thường mà luật và hồi quy logistic chưa coi là rủi ro cao. Hệ thống đưa "
                    f"{n0(int(rep.get('n_novelty', 0)))} giao dịch đang được cho qua vào hàng đợi \"Nghi vấn mẫu mới\" để chuyên viên "
                    "rà và gắn nhãn, phục vụ học lại.")
-
-    # 5 · hàng đợi hồ sơ
-    with card("db5"):
-        dash_head(5, "Hàng đợi hồ sơ cần xử lý",
-                  f"{n0(n_hold)} giao dịch bị chặn của cùng khách, cách nhau ≤ 30 phút được gom thành "
-                  f"{n0(len(res['cases']))} hồ sơ · xếp theo điểm từ cao xuống thấp")
-    page_cases(res)
 
 
 IF_SIGNALS = [("Máy lạ với khách", lambda r: r.prof_new_device == 1), ("Nơi lạ với khách", lambda r: r.prof_new_location == 1),
